@@ -226,7 +226,8 @@ const CentroAyudaPage: React.FC = () => {
               </a>
             </li>
             <li>
-              <a href="/cookies" className="flex h-full gap-3 rounded-lg border border-line bg-white px-4 py-3 transition-colors hover:bg-surface-tinted">
+              {/* /cookies no está enrutado; la política de cookies vive en la de privacidad. */}
+              <a href="/legal/privacy" className="flex h-full gap-3 rounded-lg border border-line bg-white px-4 py-3 transition-colors hover:bg-surface-tinted">
                 <Cookie className="h-5 w-5 shrink-0 text-brand" aria-hidden />
                 <div className="min-w-0">
                   <p className="text-sm font-semibold text-ink-strong">Política de cookies</p>

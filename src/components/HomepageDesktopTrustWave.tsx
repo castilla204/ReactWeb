@@ -19,9 +19,7 @@ export const HP_TRUST_WAVE_HEIGHT_CLASS = 'h-32';
  * de la separación permanece casi horizontal para no competir con el hero.
  */
 export const HomepageDesktopTrustWave: React.FC = () => {
-  const { isOpen, cookiesAccepted, triggerRef, panelId, toggle, close } = useTrustPanel();
-
-  if (!cookiesAccepted) return null;
+  const { isOpen, triggerRef, panelId, toggle, close } = useTrustPanel();
 
   return (
     <TrustDesktopPopover isOpen={isOpen} panelId={panelId} onClose={close}>

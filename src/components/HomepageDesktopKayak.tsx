@@ -110,17 +110,17 @@ export const HomepageDesktopKayak: React.FC<HomepageDesktopKayakProps> = ({
               </p>
 
               <h1 className="hp-hero-title-lg">
-                Antes de comprar,
+                Que lo revise un experto.
                 <span className="block text-brand">
-                  que lo revise{' '}
+                  Pagas al recibir{' '}
                   <span className="underline decoration-warning decoration-[3px] underline-offset-[6px]">
-                    un experto
+                    su informe
                   </span>
                 </span>
               </h1>
 
               <p className="hp-hero-body mt-3 max-w-[26rem] lg:text-base">
-                <strong className="font-semibold">Informe con fotos y vídeo.</strong> Precio cerrado y pago retenido hasta recibirlo.
+                <strong className="font-semibold">Informe con fotos y vídeo.</strong> Peritos verificados y precio cerrado.
               </p>
 
               <div

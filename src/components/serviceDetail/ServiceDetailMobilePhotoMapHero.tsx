@@ -25,6 +25,15 @@ interface ServiceDetailMobilePhotoMapHeroProps {
 
 const MAX_PILL_INDICATORS = 7;
 
+// Objeto a nivel de módulo, NO inline: CoverageMapCanvas recrea el mapa en su
+// useLayoutEffect cuando `fitPadding` cambia de referencia, así que un objeto
+// nuevo en cada render aquí dispararía un remount de MapLibre en bucle.
+// Compensa el chrome asimétrico del hero (que no tapa el mapa por igual en los
+// 4 lados): scrim superior .sd-mobile-hero-top-scrim = h-20 (80px); abajo, los
+// puntos del carrusel se posicionan a bottom: 3.5rem (56px) sobre su propio
+// scrim degradado — 72px de margen les da aire sin recortar el círculo.
+const MOBILE_HERO_MAP_FIT_PADDING = { top: 80, bottom: 72, left: 20, right: 20 };
+
 function PhotoSlide({
   src,
   index,
@@ -115,6 +124,7 @@ function MapSlide({
             longitude={location.longitude}
             rangeKm={isWorkshopOnly ? 0 : radius}
             variant="preview"
+            fitPadding={MOBILE_HERO_MAP_FIT_PADDING}
             className="h-full min-h-0 w-full rounded-none border-0"
           />
         </Suspense>
