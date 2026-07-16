@@ -106,7 +106,7 @@ export const HomepageMobileCategoryTabs: React.FC<HomepageMobileCategoryTabsProp
                   <span
                     role="presentation"
                     aria-hidden
-                    className="mx-0.5 w-px shrink-0 self-center bg-line"
+                    className="w-px shrink-0 self-center bg-line"
                     style={{ height: '1.25rem' }}
                   />
                 ) : null}
@@ -134,7 +134,7 @@ export const HomepageMobileCategoryTabs: React.FC<HomepageMobileCategoryTabsProp
                   {isDrawer && (
                     <span
                       aria-hidden
-                      className="ml-1 inline-flex h-4 shrink-0 items-center self-center rounded-full bg-ink-strong/70 px-1.5 text-[10px] font-bold uppercase leading-none tracking-[0.04em] text-white"
+                      className="ml-1.5 inline-flex h-3.5 shrink-0 items-center self-center rounded-full bg-ink-strong/70 px-1 text-[9px] font-bold uppercase leading-none tracking-[0.03em] text-white"
                     >
                       Pronto
                     </span>
