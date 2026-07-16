@@ -34,7 +34,7 @@ interface ChatProps {
      */
     embedded?: boolean;
     /** Oculta la cabecera del chat en desktop (p. ej. SearchDetails ya tiene header de página). */
-    hideHeaderOnLg?: boolean;
+    hideHeaderOnMd?: boolean;
 }
 
 function formatLastSeen(iso: string): string {
@@ -136,7 +136,7 @@ const Chat: React.FC<ChatProps> = ({
     isDetailsOpen,
     onBack,
     embedded = false,
-    hideHeaderOnLg = false,
+    hideHeaderOnMd = false,
 }) => {
     const { user } = useAuth();
     const {
@@ -502,7 +502,7 @@ const Chat: React.FC<ChatProps> = ({
     const otherAvatarSrc = otherParticipantId > 0 ? getAvatarImage(otherParticipantId) : null;
 
     return (
-        <div className="flex min-h-0 flex-1 flex-col h-full bg-surface-tinted lg:bg-white">
+        <div className="flex min-h-0 flex-1 flex-col h-full bg-surface-tinted md:bg-white">
             {/* Cabecera — oculta cuando el chat va incrustado (el contenedor padre
                 ya aporta la suya); solo se conserva un aviso fino de reconexión. */}
             {embedded ? (
@@ -516,14 +516,14 @@ const Chat: React.FC<ChatProps> = ({
                     </p>
                 )
             ) : (
-            <div className={`shrink-0 border-b border-line bg-white px-4 py-3${hideHeaderOnLg ? ' lg:hidden' : ''}`}>
+            <div className={`shrink-0 border-b border-line bg-white px-4 py-3${hideHeaderOnMd ? ' md:hidden' : ''}`}>
                 <div className="flex items-center gap-3">
                     {onBack && (
                         <button
                             type="button"
                             onClick={onBack}
                             aria-label="Volver y salir del chat"
-                            className="lg:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/80 shadow-sm transition-colors hover:bg-white active:scale-[0.98]"
+                            className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-full border border-line bg-white/80 shadow-sm transition-colors hover:bg-white active:scale-[0.98]"
                         >
                             <ArrowLeft className="h-5 w-5 text-ink-strong" />
                         </button>
@@ -581,7 +581,7 @@ const Chat: React.FC<ChatProps> = ({
             {/* Mensajes */}
             <div
                 data-chat-messages
-                className="chat-messages-area flex-1 min-h-0 overflow-y-auto overscroll-contain bg-surface-tinted px-3 py-4 [background-image:radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.04)_1px,transparent_0)] [background-size:20px_20px] sm:px-5 lg:bg-surface-tinted lg:[background-image:none]"
+                className="chat-messages-area flex-1 min-h-0 overflow-y-auto overscroll-contain bg-surface-tinted px-3 py-4 [background-image:radial-gradient(circle_at_1px_1px,rgba(0,0,0,0.04)_1px,transparent_0)] [background-size:20px_20px] sm:px-5 md:bg-surface-tinted md:[background-image:none]"
                 style={{
                     WebkitOverflowScrolling: 'touch',
                 }}
@@ -650,8 +650,8 @@ const Chat: React.FC<ChatProps> = ({
                                                     <div
                                                         className={`px-3.5 py-2.5 text-sm transition-shadow ${
                                                             isOwnMessage
-                                                                ? 'rounded-[1.15rem] rounded-br-sm bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.18)] lg:rounded-lg lg:rounded-br-sm lg:shadow-none'
-                                                                : 'rounded-[1.15rem] rounded-bl-sm border border-line bg-white text-ink-strong shadow-[0_1px_2px_rgba(15,23,42,0.04)] lg:rounded-lg lg:rounded-bl-sm lg:shadow-none'
+                                                                ? 'rounded-[1.15rem] rounded-br-sm bg-brand text-white shadow-[0_2px_8px_hsl(var(--brand)/0.18)] md:rounded-lg md:rounded-br-sm md:shadow-none'
+                                                                : 'rounded-[1.15rem] rounded-bl-sm border border-line bg-white text-ink-strong shadow-[0_1px_2px_rgba(15,23,42,0.04)] md:rounded-lg md:rounded-bl-sm md:shadow-none'
                                                         }`}
                                                     >
                                                         <p className="whitespace-pre-wrap break-words leading-relaxed">
@@ -727,7 +727,7 @@ const Chat: React.FC<ChatProps> = ({
             )}
 
             {/* Input — composer unificado (adjuntos · ubicación · enviar) */}
-            <div className="relative z-10 shrink-0 border-t border-line-soft bg-white px-3 pt-2.5 shadow-[0_-1px_12px_rgba(15,23,42,0.04)] sm:px-4 sm:pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] lg:pb-3 lg:shadow-none">
+            <div className="relative z-10 shrink-0 border-t border-line-soft bg-white px-3 pt-2.5 shadow-[0_-1px_12px_rgba(15,23,42,0.04)] sm:px-4 sm:pt-3 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] md:pb-3 md:shadow-none">
                 {/* Previsualización de adjuntos / ubicación seleccionados */}
                 {(selectedFiles.length > 0 || location) && (
                     <div className="mb-2 flex flex-wrap items-center gap-1.5">
@@ -769,7 +769,7 @@ const Chat: React.FC<ChatProps> = ({
 
                 <div
                     className={[
-                        'flex items-center gap-0.5 rounded-[1.6rem] border bg-surface-tinted py-1 pl-1 pr-1 transition-all duration-200 lg:rounded-lg',
+                        'flex items-center gap-0.5 rounded-[1.6rem] border bg-surface-tinted py-1 pl-1 pr-1 transition-all duration-200 md:rounded-lg',
                         isSending
                             ? 'border-line opacity-70'
                             : 'border-line focus-within:border-brand/40 focus-within:bg-white focus-within:shadow-[0_2px_12px_hsl(var(--brand)/0.10)] focus-within:ring-2 focus-within:ring-brand/12',
@@ -859,7 +859,7 @@ const Chat: React.FC<ChatProps> = ({
 
                 {/* Botón de detalles — solo en móvil, debajo del input */}
                 {onOpenDetails && (
-                    <div className="flex justify-center pt-1.5 pb-0 lg:hidden">
+                    <div className="flex justify-center pt-1.5 pb-0 md:hidden">
                         <button
                             type="button"
                             onClick={onOpenDetails}

@@ -3136,40 +3136,18 @@ export function SearchParameterForm({ onComplete, setCurrentStep, selectedCatego
                         <div className="flex items-center justify-between gap-2">
                             <div className="flex-1"></div>
                             <div className="flex flex-col items-center flex-1">
-                                <h2 
-                                    className="select-none"
-                                    style={{
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        fontSize: '15px',
-                                        fontWeight: 500,
-                                        lineHeight: '19px',
-                                        color: 'rgb(34, 34, 34)',
-                                        margin: 0,
-                                        padding: 0,
-                                        whiteSpace: 'nowrap',
-                                    }}
-                                >
+                                <h2 className="m-0 select-none whitespace-nowrap p-0 font-display text-lead font-medium leading-[19px] text-ink">
                                     {(() => {
                                         // ✅ USAR EL CONTADOR CORRECTO: Mostrar número de servicios, no de revisiones
-                                        const drawerServicesCount = selectedService 
+                                        const drawerServicesCount = selectedService
                                             ? services.filter(s => (s.id || (s as any).Id) !== selectedService).length
                                             : services.length;
-                                        return drawerServicesCount > 0 
-                                            ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio disponible' : 'servicios disponibles'}` 
+                                        return drawerServicesCount > 0
+                                            ? `${drawerServicesCount} ${drawerServicesCount === 1 ? 'servicio disponible' : 'servicios disponibles'}`
                                             : 'Sin servicios';
                                     })()}
                                 </h2>
-                                <div 
-                                    style={{
-                                        fontFamily: '"Airbnb Cereal VF", Circular, -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", sans-serif',
-                                        fontSize: '12px',
-                                        fontWeight: 400,
-                                        lineHeight: '16px',
-                                        color: 'rgb(106, 106, 106)',
-                                        whiteSpace: 'nowrap',
-                                        marginTop: '2px',
-                                    }}
-                                >
+                                <div className="mt-0.5 whitespace-nowrap font-display text-caption text-ink-muted">
                                     Cómo ordenamos los resultados
                                 </div>
                             </div>

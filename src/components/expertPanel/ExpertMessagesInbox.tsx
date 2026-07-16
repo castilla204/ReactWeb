@@ -24,6 +24,7 @@ const SearchDetails = lazy(() => import('../SearchDetails'));
 const PreHireChat = lazy(() =>
     import('../PreHireChat').then((m) => ({ default: m.PreHireChat })),
 );
+import { SearchDetailsSkeleton } from '../SearchDetailsSkeleton';
 
 interface ExpertMessagesInboxProps {
     token: string;
@@ -574,9 +575,13 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
             <div className="min-h-0 flex-1">
                 <Suspense
                     fallback={
-                        <div className="flex h-full items-center justify-center bg-white">
-                            <MessageCircle className="h-6 w-6 animate-pulse text-line" aria-hidden />
-                        </div>
+                        isPreHire ? (
+                            <div className="flex h-full items-center justify-center bg-white">
+                                <MessageCircle className="h-6 w-6 animate-pulse text-line" aria-hidden />
+                            </div>
+                        ) : (
+                            <SearchDetailsSkeleton embedded />
+                        )
                     }
                 >
                     {isPreHire ? (

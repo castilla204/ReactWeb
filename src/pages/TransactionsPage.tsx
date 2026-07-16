@@ -102,7 +102,9 @@ export default function TransactionsPage() {
     if (error) {
         return (
             <div className="min-h-screen bg-background p-4 sm:p-6 lg:p-8">
-                <div className="max-w-7xl mx-auto">
+                {/* max-w-4xl: mismo ancho que el estado normal de la página (línea ~117);
+                    antes max-w-7xl, un ancho que esta página nunca usa en su contenido real. */}
+                <div className="max-w-4xl mx-auto">
                     <ErrorDisplay
                         message="Error al cargar las transacciones"
                         onRetry={() => refetch()}
@@ -126,7 +128,7 @@ export default function TransactionsPage() {
                         >
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <h1 className="text-lg font-medium">Transacciones</h1>
+                        <h1 className="text-title font-bold tracking-[-0.02em]">Transacciones</h1>
                     </div>
                     <Select
                         value={transactionType}

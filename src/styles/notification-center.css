@@ -10,6 +10,7 @@
   --nc-border-strong: 0 0% 76%;
   --nc-ink: 0 0% 11%;        /* = DESIGN.md ink-strong */
   --nc-muted: 0 0% 42%;      /* = DESIGN.md ink-muted */
+  --nc-skeleton: 0 0% 90%;   /* barra placeholder — visible sobre la superficie blanca de la fila */
   --nc-overlay: 0 0% 11% / 0.32;
   --nc-destructive: 0 72% 51%; /* = DESIGN.md destructive #DC2626 (--destructive global difiere, es el genérico shadcn) */
 }
@@ -127,6 +128,35 @@
 .nc-skeleton-list {
   display: flex;
   flex-direction: column;
+}
+
+/* Fila skeleton — espeja el marco de .nc-item (superficie blanca + hairline inferior con el token
+ * --nc-border). Antes cada fila usaba la utilidad Tailwind `border-b` sin color: en Tailwind v4 el
+ * borde hereda `currentColor` (= --foreground, casi negro) → aparecían líneas negras entre filas. */
+.nc-skeleton-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 18px;
+  background: hsl(var(--nc-surface));
+  border-bottom: 1px solid hsl(var(--nc-border));
+}
+
+.nc-skeleton-item:last-child {
+  border-bottom: 0;
+}
+
+.nc-skeleton-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 639px) {
+  .nc-skeleton-item {
+    padding: 12px 16px;
+  }
 }
 
 .nc-state {

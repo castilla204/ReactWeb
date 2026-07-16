@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect, useCallback, useMemo, lazy, Suspens
 import { useIsMobile } from '../hooks/useIsMobile';
 import {
   Search,
-  ChevronRight,
   FolderTree,
   Heart,
   User,
@@ -11,7 +10,6 @@ import {
   Home,
   Camera,
   Wrench,
-  Check,
   type LucideIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -575,6 +573,31 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
       .filter((c): c is NonNullable<typeof c> => !!c);
   }, [normalizedCategories]);
 
+  /**
+   * Categorías "Próximamente" del picker móvil — se muestran como filas
+   * deshabilitadas (nombre + etiqueta) en vez de un pie de nota aparte.
+   * Antes la nota ("de momento solo para explorar") describía categorías
+   * invisibles en este picker; mostrarlas, aunque bloqueadas, es más
+   * transparente que ocultarlas u ocultar el motivo tras un texto suelto.
+   */
+  const comingSoonPickerCategories = useMemo(() => {
+    const ids = [CATEGORIES.CAMARAS, CATEGORIES.FONTANERIA] as const;
+    return ids
+      .map((id) => normalizedCategories.find((c) => c.id === id))
+      .filter((c): c is NonNullable<typeof c> => !!c);
+  }, [normalizedCategories]);
+
+  /**
+   * Total de categorías (activas + "Próximamente") del drawer de escritorio
+   * "¿Qué quieres revisar?" / "Más categorías", antes de filtrar por búsqueda.
+   * Un buscador con 1-2 filas debajo es ruido, no ayuda — se oculta hasta que
+   * de verdad hay catálogo que buscar.
+   */
+  const drawerBaseCategoryCount = useMemo(() => {
+    const base = drawerIntent === 'map' ? parentCategories : categoriesForDrawerModal;
+    return base.length + comingSoonPickerCategories.length;
+  }, [drawerIntent, parentCategories, categoriesForDrawerModal, comingSoonPickerCategories]);
+
   const desktopCategoryTabs = useMemo(
     () =>
       [
@@ -673,6 +696,7 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         className="md:hidden"
         drawerClassName="md:hidden"
         scaleBackground={false}
+        autoFocus
       >
         <div className="px-4 pb-6 pt-2">
           <div className="mx-auto flex w-full max-w-md flex-col">
@@ -709,6 +733,26 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                     }}
                   />
                 ))}
+                {comingSoonPickerCategories.map((category) => {
+                  const Icon = getCategoryLucideIcon(category.name);
+                  return (
+                    <div
+                      key={category.id}
+                      aria-label={`${category.name}, próximamente disponible`}
+                      className="flex w-full cursor-default items-center gap-4 border-b border-line px-4 py-3 text-left last:border-b-0 opacity-60"
+                    >
+                      <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-surface-tinted">
+                        <Icon className="h-6 w-6 text-ink-soft" strokeWidth={1.75} aria-hidden />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="line-clamp-1 text-subtitle font-semibold leading-tight tracking-[-0.01em] text-ink-muted">
+                          {category.name}
+                        </h3>
+                        <p className="mt-0.5 text-caption leading-snug text-ink-soft">Próximamente</p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
@@ -726,9 +770,6 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
                   <FolderTree className="h-4 w-4 text-ink-soft" strokeWidth={2} aria-hidden />
                   Ver catálogo completo
                 </button>
-                <p className="max-w-[15rem] text-caption leading-snug text-ink-muted">
-                  Cámaras y fontanería llegan pronto — de momento solo para explorar.
-                </p>
               </div>
             )}
           </div>
@@ -756,31 +797,35 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
         snapPoints={[0.9]}
       >
         <div className="flex h-full flex-col overflow-hidden" style={{ fontFamily: HP_FONT }}>
-          {/* Buscador — el título lo aporta la cabecera de ResponsiveModal */}
-          <div className="flex-shrink-0 px-4 pb-3 pt-4 md:px-5">
-            <div className="relative">
-              <Search
-                className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-soft"
-                strokeWidth={2.2}
-              />
-              <input
-                type="text"
-                placeholder="Buscar categoría…"
-                value={categorySearchQuery}
-                onChange={(e) => setCategorySearchQuery(e.target.value)}
-                className="h-12 w-full rounded-full bg-surface-tinted pl-12 pr-5 text-lead text-ink-strong transition-colors placeholder:text-ink-muted focus:bg-line-soft focus:outline-none"
-                style={{ fontFamily: HP_FONT }}
-                autoComplete="off"
-                autoCorrect="off"
-                spellCheck={false}
-                aria-label="Buscar categorías"
-              />
+          {/* Buscador — solo si hay catálogo real que buscar; con 1-4 filas es
+              ruido antes que ayuda (título lo aporta la cabecera de ResponsiveModal) */}
+          {drawerBaseCategoryCount > 4 && (
+            <div className="flex-shrink-0 px-4 pb-3 pt-4 md:px-5">
+              <div className="relative">
+                <Search
+                  className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-ink-soft"
+                  strokeWidth={2.2}
+                />
+                <input
+                  type="text"
+                  placeholder="Buscar categoría…"
+                  value={categorySearchQuery}
+                  onChange={(e) => setCategorySearchQuery(e.target.value)}
+                  className="h-12 w-full rounded-full bg-surface-tinted pl-12 pr-5 text-lead text-ink-strong transition-colors placeholder:text-ink-muted focus:bg-line-soft focus:outline-none"
+                  style={{ fontFamily: HP_FONT }}
+                  autoComplete="off"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  aria-label="Buscar categorías"
+                />
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Lista de categorías — cards ricas con foto del oficio, precio y expertos */}
+          {/* Lista de categorías — mismas filas que el picker móvil (CategoryPickerRow),
+              para que precio/jerarquía/estados de foco no diverjan entre escritorio y móvil */}
           <div
-            className="flex-1 overflow-y-auto px-4 pb-5 md:px-5"
+            className="flex-1 overflow-y-auto px-4 pb-5 pt-4 md:px-5"
             style={{
               minHeight: 0,
               WebkitOverflowScrolling: 'touch',
@@ -796,13 +841,14 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
               </div>
             ) : (
               (() => {
+                const query = categorySearchQuery.trim().toLowerCase();
+                const matchesQuery = (name: string) => !query || name.toLowerCase().includes(query);
                 const list = (drawerIntent === 'map' ? parentCategories : categoriesForDrawerModal).filter(
-                  (cat) =>
-                    !categorySearchQuery.trim() ||
-                    cat.name.toLowerCase().includes(categorySearchQuery.toLowerCase()),
+                  (cat) => matchesQuery(cat.name),
                 );
+                const filteredComingSoon = comingSoonPickerCategories.filter((cat) => matchesQuery(cat.name));
 
-                if (list.length === 0) {
+                if (list.length === 0 && filteredComingSoon.length === 0) {
                   return (
                     <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
                       <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-tinted">
@@ -822,78 +868,46 @@ export const AirbnbSearchBar: React.FC<AirbnbSearchBarProps> = React.memo(({ onS
 
                 return (
                   <>
-                    <p className="px-1 pb-1.5 pt-1 text-kicker font-medium uppercase tracking-[0.1em] text-ink-soft">
-                      {list.length} {list.length === 1 ? 'categoría' : 'categorías'}
-                    </p>
+                    {list.length > 0 && (
+                      <p className="px-1 pb-1.5 pt-1 text-kicker font-medium uppercase tracking-[0.1em] text-ink-soft">
+                        {list.length} {list.length === 1 ? 'categoría' : 'categorías'}
+                      </p>
+                    )}
                     <div className="flex flex-col">
-                      {list.map((category) => {
-                        const meta = getCategoryMeta(category.id);
-                        const img = getCategoryImage(category.name);
-                        const selected = categoryId === category.id;
+                      {list.map((category, index) => (
+                        <CategoryPickerRow
+                          key={category.id}
+                          index={index}
+                          name={category.name}
+                          image={getCategoryImage(category.name)}
+                          fallbackIcon={getCategoryLucideIcon(category.name)}
+                          meta={getCategoryMeta(category.id)}
+                          selected={categoryId === category.id}
+                          onClick={() =>
+                            drawerIntent === 'map'
+                              ? goToCategoryMap(category.id)
+                              : handleDrawerCategoryClick(category.id, category.name)
+                          }
+                        />
+                      ))}
+                      {filteredComingSoon.map((category) => {
+                        const Icon = getCategoryLucideIcon(category.name);
                         return (
-                          <button
+                          <div
                             key={category.id}
-                            type="button"
-                            aria-pressed={selected}
-                            onClick={() =>
-                              drawerIntent === 'map'
-                                ? goToCategoryMap(category.id)
-                                : handleDrawerCategoryClick(category.id, category.name)
-                            }
-                            className={`group flex w-full items-center gap-4 rounded-2xl px-2.5 py-3 text-left transition-colors ${
-                              selected ? 'bg-brand/[0.06]' : 'hover:bg-surface-tinted'
-                            }`}
+                            aria-label={`${category.name}, próximamente disponible`}
+                            className="flex w-full cursor-default items-center gap-4 border-b border-line px-4 py-3 text-left last:border-b-0 opacity-60"
                           >
-                            <div className="flex h-14 w-14 shrink-0 items-center justify-center">
-                              {img ? (
-                                <img
-                                  src={img}
-                                  alt=""
-                                  loading="lazy"
-                                  decoding="async"
-                                  draggable={false}
-                                  className="h-full w-full select-none object-contain"
-                                />
-                              ) : (
-                                <FolderTree className="h-6 w-6 text-line" strokeWidth={1.75} />
-                              )}
+                            <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-surface-tinted">
+                              <Icon className="h-6 w-6 text-ink-soft" strokeWidth={1.75} aria-hidden />
                             </div>
                             <div className="min-w-0 flex-1">
-                              <h3 className="line-clamp-1 text-lead font-semibold leading-tight tracking-[-0.01em] text-ink-strong">
+                              <h3 className="line-clamp-1 text-subtitle font-semibold leading-tight tracking-[-0.01em] text-ink-muted">
                                 {category.name}
                               </h3>
-                              {meta ? (
-                                <>
-                                  <p className="mt-0.5 truncate text-caption leading-snug text-ink-muted">
-                                    {meta.delivery}
-                                  </p>
-                                  <p className="mt-1 text-caption leading-none text-ink-muted">
-                                    <span className="font-semibold text-ink-strong">desde {meta.priceFromEur}€</span>
-                                    {' · '}
-                                    {meta.expertCount} expertos
-                                  </p>
-                                </>
-                              ) : (
-                                <p className="mt-0.5 text-caption leading-snug text-ink-muted">
-                                  Toca para ver expertos
-                                </p>
-                              )}
+                              <p className="mt-0.5 text-caption leading-snug text-ink-soft">Próximamente</p>
                             </div>
-                            {selected ? (
-                              <span
-                                aria-hidden
-                                className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-brand"
-                              >
-                                <Check className="h-3 w-3 text-white" strokeWidth={3.5} />
-                              </span>
-                            ) : (
-                              <ChevronRight
-                                className="h-4 w-4 shrink-0 text-line transition-colors group-hover:text-ink-soft"
-                                strokeWidth={2}
-                                aria-hidden
-                              />
-                            )}
-                          </button>
+                          </div>
                         );
                       })}
                     </div>

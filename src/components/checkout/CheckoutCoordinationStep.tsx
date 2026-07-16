@@ -1,5 +1,6 @@
 // v2: improved checkout UX with full-card click, stronger visual state, and selection feedback
-import { CalendarDays, Info, Lock, Send, ShieldCheck } from 'lucide-react';
+import { CalendarDays, Info, Lock, Send } from 'lucide-react';
+import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
 import {
     CheckoutSellerCoordinationFields,
@@ -21,11 +22,11 @@ import {
 } from '../../utils/sellerBookingWindow';
 import { getInspectionSubject, getInspectionSubjectCapitalized } from '../../utils/inspectionSubject';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import { SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS, SD_CHECKOUT_MOBILE_CHOOSE_CARD_STACK_CLASS, SD_CHECKOUT_MOBILE_CHOOSE_TRUST_CLASS } from '../../constants/homepageTypography';
+import { SD_CHECKOUT_EMBEDDED_STEP_CONTENT_CLASS, SD_CHECKOUT_MOBILE_CHOOSE_CARD_STACK_CLASS } from '../../constants/homepageTypography';
 import { HP_FONT } from '../../constants/homepageTypography';
 import { cn } from '../../lib/utils';
 
-export type CoordinationView = 'choose' | 'seller' | 'seller-plazos' | 'seller-map' | 'seller-contact';
+export type CoordinationView = 'choose' | 'seller' | 'seller-plazos' | 'seller-contact';
 export type CoordinationSelection = 'self' | 'seller';
 
 type Theme = 'blue' | 'amber';
@@ -420,20 +421,83 @@ function CoordinationCompareCard({
     );
 }
 
-function CoordinationChooseTrustRail() {
+const TRUST_RAIL_EASE = [0.22, 1, 0.36, 1] as const;
+
+const trustRailContainerVariants: Variants = {
+    hidden: { opacity: 0, y: 10, scale: 0.97 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        scale: 1,
+        transition: {
+            duration: 0.4,
+            ease: TRUST_RAIL_EASE,
+            when: 'beforeChildren',
+            staggerChildren: 0.04,
+            delayChildren: 0.1,
+        },
+    },
+};
+
+const trustRailWordVariants: Variants = {
+    hidden: { opacity: 0, y: 6 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.26, ease: TRUST_RAIL_EASE } },
+};
+
+/** Revela el texto palabra a palabra (no letra a letra: en un paso de checkout que se
+ *  ve en cada compra, una cascada de caracteres se vuelve ruido al segundo vistazo). */
+function TrustRailAnimatedText({ text, className }: { text: string; className?: string }) {
     return (
-        <div className={SD_CHECKOUT_MOBILE_CHOOSE_TRUST_CLASS} role="note">
-            <ShieldCheck
-                className="mt-0.5 h-4 w-4 shrink-0 text-brand"
-                strokeWidth={2}
-                aria-hidden
-            />
+        <span className={className}>
+            {text.split(' ').map((word, i, words) => (
+                <motion.span key={i} variants={trustRailWordVariants} className="inline-block">
+                    {word}
+                    {i < words.length - 1 ? ' ' : ''}
+                </motion.span>
+            ))}
+        </span>
+    );
+}
+
+/**
+ * Nota de confianza animada — entrada con resorte + texto revelado palabra a
+ * palabra, círculo verde + Lock (el mismo lenguaje visual que el badge de
+ * escrow del resto de la app: ver HomepageTrustChip.tsx / HomepageMobileHeroTrustPill.tsx).
+ * Sin card propia (bg/border/shadow): vive dentro del footer fijo blanco del
+ * checkout móvil (CheckoutMobileStickyFooter), no flotando en el cuerpo con
+ * scroll — "sale del propio bottom bar" en vez de ser una tarjeta aparte.
+ */
+export function CheckoutTrustNote({ lead, rest }: { lead: string; rest: string }) {
+    const prefersReducedMotion = useReducedMotion();
+
+    return (
+        <motion.div
+            className="relative mb-2.5 flex items-start gap-2.5"
+            role="note"
+            initial={prefersReducedMotion ? false : 'hidden'}
+            animate={prefersReducedMotion ? undefined : 'visible'}
+            variants={trustRailContainerVariants}
+        >
+            <span className="relative mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
+                <span
+                    aria-hidden
+                    className="absolute inset-0 rounded-full bg-success/35 motion-safe:animate-[trust-rail-pulse_2.2s_ease-out_1]"
+                />
+                <Lock className="relative h-3 w-3" strokeWidth={2.25} aria-hidden />
+            </span>
             <p className="text-caption leading-[1.45] text-ink-muted">
-                <span className="font-semibold text-ink-strong">Tu pago queda protegido</span>
-                {' '}
-                da igual quién elija la fecha: lo retenemos hasta que apruebes el informe.
+                {prefersReducedMotion ? (
+                    <>
+                        <span className="font-semibold text-ink-strong">{lead}</span> {rest}
+                    </>
+                ) : (
+                    <>
+                        <TrustRailAnimatedText text={lead} className="font-semibold text-ink-strong" />{' '}
+                        <TrustRailAnimatedText text={rest} />
+                    </>
+                )}
             </p>
-        </div>
+        </motion.div>
     );
 }
 
@@ -577,8 +641,6 @@ export interface CheckoutCoordinationStepProps {
     headingClassName?: string;
     /** Móvil paso choose: overlap + formas irregulares + tabla sin zebra. */
     chooseLayout?: boolean;
-    /** Móvil paso choose: rail de confianza in-scroll (no footer). */
-    showTrustRail?: boolean;
 }
 
 function CoordinationOptionCards({
@@ -679,7 +741,6 @@ export function CheckoutCoordinationStep({
     showSellerValidation,
     headingClassName,
     chooseLayout = false,
-    showTrustRail = false,
 }: CheckoutCoordinationStepProps) {
     const sellerFieldsVariant =
         view === 'seller-plazos' ? 'plazos' : view === 'seller-contact' ? 'contact' : 'full';
@@ -719,7 +780,6 @@ export function CheckoutCoordinationStep({
                                 embedded
                                 onSelect={onSelect}
                             />
-                            {showTrustRail ? <CoordinationChooseTrustRail /> : null}
                         </>
                     )}
                 </div>
@@ -817,7 +877,6 @@ export function CheckoutCoordinationStep({
                                 chooseLayout={chooseLayout}
                                 onSelect={onSelect}
                             />
-                            {showTrustRail ? <CoordinationChooseTrustRail /> : null}
                         </>
                     )
                 ) : (

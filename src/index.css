@@ -66,6 +66,20 @@
   }
 }
 
+/* Pulso único del badge Vault en la franja de confianza del checkout (paso
+   "¿Quién elige la fecha?") — un solo aro que crece y se desvanece al aparecer,
+   no un loop; motion-safe: en el className ya lo desactiva con reduced-motion. */
+@keyframes trust-rail-pulse {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.7);
+  }
+}
+
 @keyframes chat-message-in {
   from {
     opacity: 0;
@@ -679,7 +693,7 @@ body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
     }
 
     .hp-hero-title-lg {
-        @apply font-display text-[1.85rem] font-semibold leading-[1.1] tracking-[-0.035em] text-ink-strong lg:text-[2.45rem];
+        @apply font-display text-[1.85rem] font-semibold leading-[1.1] tracking-[-0.035em] text-ink-strong lg:text-[2rem];
     }
 
     .hp-hero-body {
@@ -792,7 +806,7 @@ body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
     }
 
     .sd-page-title {
-        @apply font-display text-xl font-semibold tracking-[-0.02em] text-ink-strong md:text-[1.65rem];
+        @apply font-display text-xl font-semibold tracking-[-0.02em] text-ink-strong md:text-headline;
         text-wrap: balance;
     }
 
@@ -943,7 +957,11 @@ body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
     }
 
     .service-detail-desktop .sd-page-title {
-        @apply lg:text-[1.625rem] lg:leading-[1.25] text-ink-strong;
+        /* Antes lg:text-[1.625rem]=26px pisaba el md:text-headline=26.4px de arriba con
+           un valor casi igual pero distinto → el título encogía 0.4px al pasar de
+           tablet a desktop. Ahora solo ajusta el interlineado, el tamaño ya es
+           consistente md→lg vía el token `headline`. */
+        @apply lg:leading-[1.25] text-ink-strong;
     }
 
     .service-detail-desktop .sd-body {
@@ -2127,23 +2145,6 @@ input, textarea {
         animation: coordination-radio-settle 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
-    /* Header wizard móvil: ola ink-strong; el main arranca bajo el header (sin margen). */
-    .checkout-wizard-header--wave {
-        border-bottom: none;
-        margin-bottom: 0;
-    }
-    .checkout-wizard-header-wave {
-        pointer-events: none;
-        position: absolute;
-        left: 0;
-        right: 0;
-        bottom: -16px;
-        z-index: 1;
-        height: 22px;
-        width: 100%;
-        color: hsl(var(--ink-strong));
-    }
-
     /* Selector de camino checkout: preview de pasos al cambiar opción. */
     @keyframes coordination-path-preview-in {
         from {
@@ -2352,6 +2353,26 @@ input, textarea {
     .sk-shimmer::before {
         animation: sk-shimmer-sweep 1.8s linear infinite;
         animation-delay: var(--sk-delay, 0ms);
+    }
+}
+
+/* Fundido de entrada del contenido real de una ruta (PageFadeIn), tras retirarse
+ * el skeleton de RouteSuspense. Suaviza el reemplazo skeleton → página sin corte
+ * seco. Reglas de seguridad:
+ *   · SIN `animation-fill-mode: backwards`/`both`: el estado en reposo (sin animar,
+ *     con reduced-motion, o en pestaña en segundo plano donde las animaciones no
+ *     corren) es opacity:1 → la página NUNCA se queda en blanco. El fundido es puro
+ *     enhancement sobre un contenido ya visible por defecto.
+ *   · solo `opacity` (seguro para descendientes position:fixed),
+ *   · gated en `no-preference` → respeta prefers-reduced-motion (aparece al instante). */
+@keyframes route-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .route-fade-in {
+        animation: route-fade-in 200ms cubic-bezier(0.16, 1, 0.3, 1);
     }
 }
 

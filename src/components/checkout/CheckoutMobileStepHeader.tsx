@@ -2,9 +2,7 @@ import type { ReactNode } from 'react';
 import { cn } from '../../lib/utils';
 import {
     SD_CHECKOUT_MOBILE_STEP_DESC_CLASS,
-    SD_CHECKOUT_MOBILE_STEP_DESC_ON_DARK_CLASS,
     SD_CHECKOUT_MOBILE_STEP_TITLE_CLASS,
-    SD_CHECKOUT_MOBILE_STEP_TITLE_ON_DARK_CLASS,
     SD_CHECKOUT_MOBILE_STEP_TITLE_UNDERLINE_CLASS,
 } from '../../constants/homepageTypography';
 import { CheckoutMobileStepper, type StepDef } from './CheckoutMobileStepper';
@@ -24,8 +22,6 @@ interface CheckoutMobileStepHeaderProps {
     hideStepper?: boolean;
     /** Acción o dato anclado a la derecha (p. ej. total en el paso de pago). */
     trailing?: ReactNode;
-    /** Cabecera sobre banda ink-strong (wizard móvil). */
-    onDark?: boolean;
     className?: string;
 }
 
@@ -41,13 +37,12 @@ export function CheckoutMobileStepHeader({
     description,
     hideStepper = false,
     trailing,
-    onDark = true,
     className,
 }: CheckoutMobileStepHeaderProps) {
     return (
         <div className={cn('min-w-0', className)}>
             {hideStepper ? null : (
-                <CheckoutMobileStepper currentStep={step} steps={steps} onDark={onDark} />
+                <CheckoutMobileStepper currentStep={step} steps={steps} />
             )}
             <div
                 className={cn(
@@ -59,26 +54,14 @@ export function CheckoutMobileStepHeader({
                 <div className="min-w-0 flex-1">
                     <h2
                         className={cn(
-                            onDark
-                                ? SD_CHECKOUT_MOBILE_STEP_TITLE_ON_DARK_CLASS
-                                : SD_CHECKOUT_MOBILE_STEP_TITLE_CLASS,
-                            hideStepper &&
-                                !onDark &&
-                                SD_CHECKOUT_MOBILE_STEP_TITLE_UNDERLINE_CLASS,
+                            SD_CHECKOUT_MOBILE_STEP_TITLE_CLASS,
+                            hideStepper && SD_CHECKOUT_MOBILE_STEP_TITLE_UNDERLINE_CLASS,
                         )}
                     >
                         {title}
                     </h2>
                     {description ? (
-                        <p
-                            className={
-                                onDark
-                                    ? SD_CHECKOUT_MOBILE_STEP_DESC_ON_DARK_CLASS
-                                    : SD_CHECKOUT_MOBILE_STEP_DESC_CLASS
-                            }
-                        >
-                            {description}
-                        </p>
+                        <p className={SD_CHECKOUT_MOBILE_STEP_DESC_CLASS}>{description}</p>
                     ) : null}
                 </div>
                 {trailing ? (

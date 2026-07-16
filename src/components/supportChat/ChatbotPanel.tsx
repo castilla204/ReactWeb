@@ -1,5 +1,4 @@
 import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { ArrowDown, ArrowLeft, ArrowRight, ArrowUp, RotateCcw, X } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { TypingDots } from '../chat/TypingDots';
@@ -7,10 +6,8 @@ import { AssistantMessage } from './AssistantMessage';
 import { SupportChatAssistantIcon } from './SupportChatAssistantIcon';
 import {
   CHATBOT_EMPTY_TITLE,
-  CHATBOT_PRIVACY_NOTE,
   CHATBOT_SUBTITLE,
   CHATBOT_SUGGESTED_QUESTIONS,
-  CHATBOT_WELCOME_MESSAGE,
 } from '../../content/faqContent';
 import {
   MAX_MESSAGE_LENGTH,
@@ -240,24 +237,12 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
               <h3 className="chat-empty-enter text-title font-semibold leading-[1.3] tracking-[-0.015em] text-ink-strong text-balance">
                 {CHATBOT_EMPTY_TITLE}
               </h3>
-              <p className="chat-empty-enter mt-1.5 text-meta leading-relaxed text-ink-muted text-pretty [animation-delay:60ms]">
-                {CHATBOT_WELCOME_MESSAGE}
-              </p>
-              <p className="chat-empty-enter mt-2 text-caption leading-snug text-ink-soft [animation-delay:120ms]">
-                {CHATBOT_PRIVACY_NOTE}
-              </p>
 
               <section
-                className="chat-empty-enter mt-6 [animation-delay:160ms]"
-                aria-labelledby="suggestions-heading"
+                className="chat-empty-enter mt-5 [animation-delay:60ms]"
+                aria-label="Preguntas frecuentes"
               >
-                <h4
-                  id="suggestions-heading"
-                  className="text-meta font-semibold text-ink-muted"
-                >
-                  Preguntas frecuentes
-                </h4>
-                <ul className="-mx-2 mt-2" aria-label="Preguntas sugeridas">
+                <ul className="-mx-2" aria-label="Preguntas sugeridas">
                   {suggestions.map((q, i) => (
                     <li key={q} className="chat-suggestion-enter" style={{ '--i': i } as React.CSSProperties}>
                       <button
@@ -292,14 +277,6 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
                   </button>
                 )}
               </section>
-
-              <Link
-                to="/faq"
-                onClick={onClose}
-                className="mt-5 block rounded px-2 text-meta font-medium text-ink-muted underline-offset-4 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-              >
-                Ver todas las preguntas frecuentes
-              </Link>
             </div>
           ) : (
             <div className={READING_WIDTH}>
@@ -425,13 +402,6 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
               {draftLen}/{MAX_MESSAGE_LENGTH}
             </p>
           )}
-          <Link
-            to="/faq"
-            onClick={onClose}
-            className="mt-2.5 block rounded text-center text-meta font-medium text-ink-muted underline-offset-4 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
-          >
-            Ver preguntas frecuentes
-          </Link>
         </div>
       </form>
     </div>

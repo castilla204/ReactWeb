@@ -343,7 +343,7 @@ export const ServiceDetailPageHeadline: React.FC<ServiceDetailPageHeadlineProps>
 
               onImage
 
-                ? `font-display text-xl font-semibold tracking-[-0.02em] text-white lg:text-[1.625rem] lg:leading-[1.25] ${ON_IMAGE_META_SHADOW}`
+                ? `font-display text-xl font-semibold tracking-[-0.02em] text-white md:text-headline lg:leading-[1.25] ${ON_IMAGE_META_SHADOW}`
 
                 : 'sd-page-title'
 

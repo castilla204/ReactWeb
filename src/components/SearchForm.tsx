@@ -394,7 +394,7 @@ export default function SearchForm({
                                             {/* Subtotal */}
                                             <div className="flex justify-between items-center">
                                                 <span className="text-lead text-ink">Subtotal</span>
-                                                <span className="text-lead font-normal text-ink">
+                                                <span className="text-lead font-normal tabular-nums text-ink">
                                                     {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
                                                 </span>
                                             </div>
@@ -406,7 +406,7 @@ export default function SearchForm({
                                                         <span className="text-subtitle font-semibold text-ink">Total</span>
                                                         <div className="text-right">
                                                             <div className="flex items-center justify-end gap-1.5">
-                                                                <span className="text-xl font-bold text-ink">
+                                                                <span className="text-xl font-bold tabular-nums text-ink">
                                                                     {priceInfo.wasConverted ? `≈ ${priceInfo.converted}` : priceInfo.display}
                                                                 </span>
                                                             </div>

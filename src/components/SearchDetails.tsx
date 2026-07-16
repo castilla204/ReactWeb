@@ -1,6 +1,6 @@
 import { useState, useEffect, type ReactNode } from 'react';
 import { ArrowLeft, Star, AlertTriangle, MessageCircle, Upload, Share2, FileText, Calendar, CheckCircle, XCircle, MapPin, Tag, X, FileCheck, Film, Download, WifiOff, RefreshCw, AlertCircle, FastForward, Loader2 } from 'lucide-react';
-import { SileoSkeleton } from './ui/sileo-skeleton';
+import { SearchDetailsSkeleton } from './SearchDetailsSkeleton';
 import CountryFlag from './CountryFlag';
 import { Button } from './ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -877,6 +877,159 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         );
     };
 
+    // Pareja de badges de estado (hire + cita) — compartida por la cabecera de página
+    // (no embebido), la hoja de detalles móvil y el aside de escritorio para que no
+    // diverjan entre sí. El wrapper (div/gap/margen) queda en cada llamador porque
+    // difiere legítimamente entre esos tres contextos.
+    const renderHireStatusBadges = () => (
+        <>
+            {searchHireStatusInfo && <StatusBadge statusInfo={searchHireStatusInfo} />}
+            {showAppointmentBadge && <StatusBadge statusInfo={appointmentStatusInfo} />}
+        </>
+    );
+
+    // Precio total + desglose de impuestos — idéntico en la hoja móvil y el aside
+    // de escritorio; solo cambia el wrapper alrededor de la llamada.
+    const renderPriceSummary = () => {
+        const priceSource = search?.searchHire || (serviceInfo?.price ? { amount: serviceInfo.price } : null);
+        if (!priceSource) return null;
+        const priceDisplay = getPriceDisplay(priceSource);
+
+        return (
+            <div className="border-t border-line-soft pt-3">
+                <div className="flex items-baseline justify-between gap-3">
+                    <span className="text-meta font-medium text-ink-muted">Precio total</span>
+                    <div className="flex items-baseline gap-1.5">
+                        <span className="text-xl font-semibold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
+                        {priceDisplay.hasTaxInfo && (
+                            <span className="text-caption font-medium text-ink-muted">IVA incl.</span>
+                        )}
+                    </div>
+                </div>
+
+                {priceDisplay.hasTaxInfo && (
+                    <Accordion type="single" collapsible className="mt-1.5 w-full">
+                        <AccordionItem value="price-breakdown" className="border-none">
+                            <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
+                                <span>Ver desglose de impuestos</span>
+                            </AccordionTrigger>
+                            <AccordionContent className="space-y-1 pb-0 pt-1">
+                                <div className="flex justify-between text-caption">
+                                    <span className="text-ink-muted">Base imponible</span>
+                                    <span className="font-medium text-ink-strong">{priceDisplay.formattedBase}</span>
+                                </div>
+                                <div className="flex justify-between text-caption">
+                                    <span className="text-ink-muted">IVA</span>
+                                    <span className="font-medium text-ink-strong">{priceDisplay.formattedTax}</span>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    </Accordion>
+                )}
+            </div>
+        );
+    };
+
+    // Bloque "Cliente" (avatar + nombre + email) — idéntico en móvil y escritorio.
+    const renderClienteBlock = () => {
+        if (!search?.user) return null;
+        return (
+            <>
+                <SdSectionTitle>Cliente</SdSectionTitle>
+                <div className="mt-2.5 flex items-center gap-3">
+                    <Avatar className="h-9 w-9 shrink-0">
+                        <AvatarImage
+                            src={search.user.profilePictureUrl || undefined}
+                            alt={search.user.name}
+                        />
+                        <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
+                            {search.user.name?.charAt(0).toUpperCase() || 'C'}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                        <p className="truncate text-meta font-medium text-ink-strong">{search.user.name}</p>
+                        <p className="mt-0.5 truncate text-caption text-ink-muted">{search.user.email}</p>
+                    </div>
+                </div>
+            </>
+        );
+    };
+
+    // Bloque "Experto" (avatar + nombre + verificado + bandera + disponibilidad) —
+    // idéntico en móvil y escritorio.
+    const renderExpertoBlock = () => {
+        if (!expertData) return null;
+        return (
+            <>
+                <SdSectionTitle>Experto</SdSectionTitle>
+                <div className="mt-2.5 flex items-center gap-3">
+                    <Avatar className="h-9 w-9 shrink-0">
+                        <AvatarImage
+                            src={expertData.profilePictureUrl || undefined}
+                            alt={expertData.name}
+                        />
+                        <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
+                            {expertData.name?.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                    </Avatar>
+                    <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5">
+                            <p className="truncate text-meta font-medium text-ink-strong">{expertData.name}</p>
+                            <VerifiedBadge className="h-4 w-4 shrink-0" />
+                            {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
+                                <CountryFlag
+                                    countryCode={
+                                        search?.searchHire?.expertCountry ||
+                                        serviceInfo?.expertCountry ||
+                                        expertProfile?.country ||
+                                        null
+                                    }
+                                    size="sm"
+                                />
+                            )}
+                        </div>
+                    </div>
+                </div>
+                {expertProfile?.currentAvailability && (
+                    <div className="mt-2.5 pl-[48px]">
+                        <ExpertAvailability
+                            availability={expertProfile.currentAvailability}
+                            compact={true}
+                        />
+                    </div>
+                )}
+            </>
+        );
+    };
+
+    // Reseña ya publicada (puntuación + comentario) — idéntico en móvil y escritorio.
+    // `review.score` puede llegar null/undefined desde el backend; sin la guarda de
+    // tipo se pintaba "★ /5" en blanco.
+    const renderExistingReview = () => {
+        if (!review) return null;
+        return (
+            <>
+                <div className="flex items-center justify-between">
+                    <SdSectionTitle>Reseña</SdSectionTitle>
+                    {typeof review.score === 'number' && (
+                        <span
+                            className="inline-flex items-center gap-1 text-caption font-semibold text-ink-strong"
+                            aria-label={`Puntuación ${review.score} de 5`}
+                        >
+                            <Star className="h-3.5 w-3.5 fill-current" aria-hidden />
+                            {review.score}/5
+                        </span>
+                    )}
+                </div>
+                {review.description && (
+                    <p className="rounded-xl bg-surface-tinted p-3 text-meta leading-relaxed text-ink">
+                        {review.description}
+                    </p>
+                )}
+            </>
+        );
+    };
+
     // Confirmación genérica para acciones destructivas (cancelar inspección/cita) que antes
     // usaban window.confirm() nativo: mismo AlertDialog de marca que "Confirmar cita", con
     // loading visible en el botón mientras la petición está en vuelo (antes no había ningún
@@ -1049,42 +1202,20 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         appointment?.status || ''
     );
 
+    // Una vez el hire llega a un estado terminal (completado, cancelado, disputa
+    // resuelta…), el badge de la cita no aporta nada nuevo — el propio badge del
+    // hire ya implica que la cita terminó. Evita mostrar dos pastillas redundantes.
+    const showAppointmentBadge =
+        !!appointment && !!appointmentStatusInfo &&
+        !isTerminalSearchHireStatus(searchHireStatus || '', searchHireStatusInfo);
+
     // ✅ Manejo elegante de errores con toast (DEBE estar antes de cualquier return)
     useErrorHandler(error, isError);
 
     if (isLoading) {
-        // Skeleton estructural (cabecera + 2 columnas) en vez de un spinner centrado
-        // sobre pantalla en blanco → mejor percepción y menos salto al llegar el contenido.
-        return (
-            <div
-                className={`bg-surface-tinted ${embedded ? 'h-full min-h-[20rem] p-4' : 'min-h-screen px-4 py-6 md:px-8'}`}
-                aria-busy="true"
-            >
-                <div className="mx-auto w-full max-w-5xl space-y-4">
-                    <div className="flex items-center gap-3">
-                        <SileoSkeleton className="h-10 w-10" rounded="full" />
-                        <div className="flex-1 space-y-2">
-                            <SileoSkeleton className="h-5 w-1/2 rounded" />
-                            <SileoSkeleton className="h-3.5 w-1/3 rounded" />
-                        </div>
-                        <SileoSkeleton className="h-8 w-24 rounded-full" />
-                    </div>
-                    <div className="grid gap-4 md:grid-cols-[1fr_360px]">
-                        <div className="space-y-3">
-                            <SileoSkeleton className="h-44 w-full rounded-xl" />
-                            <SileoSkeleton className="h-4 w-full rounded" />
-                            <SileoSkeleton className="h-4 w-5/6 rounded" />
-                            <SileoSkeleton className="h-4 w-2/3 rounded" />
-                        </div>
-                        <div className="space-y-3">
-                            <SileoSkeleton className="h-28 w-full rounded-xl" />
-                            <SileoSkeleton className="h-20 w-full rounded-xl" />
-                            <SileoSkeleton className="h-10 w-full rounded-lg" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        );
+        // Skeleton que ESPEJA el layout real (cabecera + chat + sidebar) reutilizando
+        // sus mismas constantes de marco → sin salto de layout al llegar el contenido.
+        return <SearchDetailsSkeleton embedded={embedded} />;
     }
 
     // Verificar si es error de red
@@ -1125,11 +1256,11 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         ? 'flex h-full w-full min-h-0 flex-1 flex-col'
         : SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS;
     const sdLayoutClass = embedded
-        ? 'flex min-h-0 flex-1 flex-col overflow-hidden lg:flex-row lg:items-stretch'
+        ? 'flex min-h-0 flex-1 flex-col overflow-hidden md:flex-row md:items-stretch'
         : `${SD_SEARCH_DETAILS_DESKTOP_LAYOUT_CLASS} max-md:gap-0 max-md:p-0`;
     const sdChatClass = embedded
-        ? `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} overflow-hidden lg:border-r lg:border-line`
-        : `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CHAT_CARD_CLASS} max-md:rounded-none max-md:border-0 max-md:shadow-none max-lg:border max-lg:border-line`;
+        ? `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} overflow-hidden md:border-r md:border-line`
+        : `${SD_SEARCH_DETAILS_DESKTOP_CHAT_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_CHAT_CARD_CLASS} max-md:rounded-none max-md:border-0 max-md:shadow-none`;
     const sdSidebarClass = embedded
         ? `${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS} overflow-hidden bg-white`
         : `${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CLASS} ${SD_SEARCH_DETAILS_DESKTOP_SIDEBAR_CARD_CLASS}`;
@@ -1142,7 +1273,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
         }>
             {/* Header de página — oculto cuando va incrustado (la bandeja ya aporta cabecera) */}
             {!embedded && (
-            <header className="hidden lg:flex flex-shrink-0 z-50 border-b border-line bg-white">
+            <header className="hidden md:flex flex-shrink-0 z-50 border-b border-line bg-white">
                 <div className={`${SD_SEARCH_DETAILS_DESKTOP_INNER_CLASS} px-6 py-3.5`}>
                     <div className="flex items-center justify-between gap-4">
                         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -1160,10 +1291,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 </h1>
                                 {searchHireStatusInfo && (
                                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                                        <StatusBadge statusInfo={searchHireStatusInfo} />
-                                        {appointment && appointmentStatusInfo && (
-                                            <StatusBadge statusInfo={appointmentStatusInfo} />
-                                        )}
+                                        {renderHireStatusBadges()}
                                     </div>
                                 )}
                             </div>
@@ -1232,7 +1360,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
             {/* Main Layout - Sin scroll, solo scroll interno en componentes */}
             {!isNetworkErr && (
             <div className={sdInnerClass}>
-            <div className={`${sdLayoutClass} ${embedded ? 'bg-white' : 'bg-surface-tinted lg:bg-transparent'}`} style={{ minHeight: 0, flex: '1 1 0%' }}>
+            <div className={`${sdLayoutClass} ${embedded ? 'bg-white' : 'bg-surface-tinted md:bg-transparent'}`} style={{ minHeight: 0, flex: '1 1 0%' }}>
                 {/* Chat Section - Izquierda en desktop, tabs en móvil */}
                 {canViewChat && (
                     <div className={sdChatClass}>
@@ -1252,7 +1380,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     onOpenDetails={() => setMobileDetailsOpen((v) => !v)}
                                     onBack={onBack || (() => navigate('/hires'))}
                                     embedded={embedded}
-                                    hideHeaderOnLg={!embedded}
+                                    hideHeaderOnMd={!embedded}
                                 />
                             </div>
 
@@ -1267,12 +1395,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                     {/* Estado — solo badges, sin título de sección */}
                                     {(searchHireStatusInfo || (appointment && appointmentStatusInfo)) && (
                                         <div className="flex items-center gap-2 flex-wrap">
-                                            {searchHireStatusInfo && (
-                                                <StatusBadge statusInfo={searchHireStatusInfo} />
-                                            )}
-                                            {appointment && appointmentStatusInfo && (
-                                                <StatusBadge statusInfo={appointmentStatusInfo} />
-                                            )}
+                                            {renderHireStatusBadges()}
                                         </div>
                                     )}
                                     <div className="space-y-2">
@@ -1296,46 +1419,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                                 Radio de servicio <span className="font-medium text-ink-strong">{serviceInfo.locationRange} km</span>
                                             </p>
                                         )}
-                                        {/* Precio con desglose */}
-                                        {(() => {
-                                            const priceSource = search?.searchHire || (serviceInfo?.price ? { amount: serviceInfo.price } : null);
-                                            if (!priceSource) return null;
-                                            const priceDisplay = getPriceDisplay(priceSource);
-
-                                            return (
-                                                <div className="border-t border-line-soft pt-3">
-                                                    <div className="flex items-baseline justify-between gap-3">
-                                                        <span className="text-meta font-medium text-ink-muted">Precio total</span>
-                                                        <div className="flex items-baseline gap-1.5">
-                                                            <span className="text-xl font-semibold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
-                                                            {priceDisplay.hasTaxInfo && (
-                                                                <span className="text-caption font-medium text-ink-muted">IVA incl.</span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-
-                                                    {priceDisplay.hasTaxInfo && (
-                                                        <Accordion type="single" collapsible className="mt-1.5 w-full">
-                                                            <AccordionItem value="price-breakdown" className="border-none">
-                                                                <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
-                                                                    <span>Ver desglose de impuestos</span>
-                                                                </AccordionTrigger>
-                                                                <AccordionContent className="space-y-1 pb-0 pt-1">
-                                                                    <div className="flex justify-between text-caption">
-                                                                        <span className="text-ink-muted">Base imponible</span>
-                                                                        <span className="font-medium text-ink-strong">{priceDisplay.formattedBase}</span>
-                                                                    </div>
-                                                                    <div className="flex justify-between text-caption">
-                                                                        <span className="text-ink-muted">IVA</span>
-                                                                        <span className="font-medium text-ink-strong">{priceDisplay.formattedTax}</span>
-                                                                    </div>
-                                                                </AccordionContent>
-                                                            </AccordionItem>
-                                                        </Accordion>
-                                                    )}
-                                                </div>
-                                            );
-                                        })()}
+                                        {renderPriceSummary()}
                                     </div>
 
                                     {/* Accordion para explicar el estado - Múltiples desplegables */}
@@ -1376,7 +1460,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {/* Sección de Cita - Móvil - Siempre visible si necesita cita */}
                                 {needsAppointment && (
-                                    <div className="mt-6 border-t border-line-soft pt-5 lg:hidden">
+                                    <div className="mt-6 border-t border-line-soft pt-5 md:hidden">
                                         <div className="mb-2.5 flex items-center justify-between gap-2">
                                             <SdSectionTitle>Cita</SdSectionTitle>
                                             <div className="flex items-center gap-1.5">
@@ -1500,67 +1584,14 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                 {/* Cliente */}
                                 {search?.user && (
                                     <div className="border-t border-line-soft pt-5">
-                                        <SdSectionTitle>Cliente</SdSectionTitle>
-                                        <div className="mt-2.5 flex items-center gap-3">
-                                            <Avatar className="h-9 w-9 shrink-0">
-                                                <AvatarImage
-                                                    src={search.user.profilePictureUrl || undefined}
-                                                    alt={search.user.name}
-                                                />
-                                                <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
-                                                    {search.user.name?.charAt(0).toUpperCase() || 'C'}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="min-w-0 flex-1">
-                                                <p className="truncate text-meta font-medium text-ink-strong">{search.user.name}</p>
-                                                <p className="mt-0.5 truncate text-caption text-ink-muted">{search.user.email}</p>
-                                            </div>
-                                        </div>
+                                        {renderClienteBlock()}
                                     </div>
                                 )}
 
                                 {/* Experto */}
                                 {expertData && (
                                     <div className="border-t border-line-soft pt-5">
-                                        <SdSectionTitle>Experto</SdSectionTitle>
-                                        <div className="mt-2.5 flex items-center gap-3">
-                                            <Avatar className="h-9 w-9 shrink-0">
-                                                <AvatarImage
-                                                    src={expertData.profilePictureUrl || undefined}
-                                                    alt={expertData.name}
-                                                />
-                                                <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
-                                                    {expertData.name?.charAt(0).toUpperCase()}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="min-w-0 flex-1">
-                                                <div className="flex items-center gap-1.5">
-                                                    <p className="truncate text-meta font-medium text-ink-strong">{expertData.name}</p>
-                                                    <VerifiedBadge className="h-4 w-4 shrink-0" />
-                                                    {/* ✅ BANDERA DEL PAÍS DEL EXPERTO */}
-                                                    {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
-                                                        <CountryFlag
-                                                            countryCode={
-                                                                search?.searchHire?.expertCountry ||
-                                                                serviceInfo?.expertCountry ||
-                                                                expertProfile?.country ||
-                                                                null
-                                                            }
-                                                            size="sm"
-                                                        />
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </div>
-                                        {/* ✅ Disponibilidad del experto en móvil */}
-                                        {expertProfile?.currentAvailability && (
-                                            <div className="mt-2.5 pl-[48px]">
-                                                <ExpertAvailability
-                                                    availability={expertProfile.currentAvailability}
-                                                    compact={true}
-                                                />
-                                            </div>
-                                        )}
+                                        {renderExpertoBlock()}
                                     </div>
                                 )}
 
@@ -1682,24 +1713,13 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {review && (
                                     <div className="space-y-2.5 border-t border-line-soft pt-5">
-                                        <div className="flex items-center justify-between">
-                                            <SdSectionTitle>Reseña</SdSectionTitle>
-                                            <span className="inline-flex items-center gap-1 text-caption font-semibold text-ink-strong">
-                                                <Star className="h-3.5 w-3.5 fill-current" />
-                                                {review.score}/5
-                                            </span>
-                                        </div>
-                                        {review.description && (
-                                            <p className="rounded-xl bg-surface-tinted p-3 text-meta leading-relaxed text-ink">
-                                                {review.description}
-                                            </p>
-                                        )}
+                                        {renderExistingReview()}
                                     </div>
                                 )}
 
                                     {/* Botones de acción en el panel de detalles (móvil) */}
                                     {(appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject || canDispute || canApprove || canExpertRespond) && (
-                                        <div className="lg:hidden sticky bottom-0 -mx-5 border-t border-line bg-white px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-3 shadow-[0_-4px_20px_rgba(15,23,42,0.08)]">
+                                        <div className="md:hidden sticky bottom-0 -mx-5 border-t border-line bg-white px-5 pt-4 pb-[max(1rem,env(safe-area-inset-bottom,0px))] space-y-3 shadow-[0_-4px_20px_rgba(15,23,42,0.08)]">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
                                                 <div className="space-y-1.5 border-b border-line-soft pb-3">
@@ -1917,10 +1937,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                         })()}
                         {searchHireStatusInfo && (
                             <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                                <StatusBadge statusInfo={searchHireStatusInfo} />
-                                {appointment && appointmentStatusInfo && (
-                                    <StatusBadge statusInfo={appointmentStatusInfo} />
-                                )}
+                                {renderHireStatusBadges()}
                             </div>
                         )}
                     </div>
@@ -1951,46 +1968,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                                             {serviceInfo?.locationRange && <>Radio {serviceInfo.locationRange} km</>}
                                         </p>
                                     )}
-                                    {/* Precio con desglose */}
-                                    {(() => {
-                                        const priceSource = search?.searchHire || (serviceInfo?.price ? { amount: serviceInfo.price } : null);
-                                        if (!priceSource) return null;
-                                        const priceDisplay = getPriceDisplay(priceSource);
-
-                                        return (
-                                            <div className="border-t border-line-soft pt-3">
-                                                <div className="flex items-baseline justify-between gap-3">
-                                                    <span className="text-meta font-medium text-ink-muted">Precio total</span>
-                                                    <div className="flex items-baseline gap-1.5">
-                                                        <span className="text-xl font-semibold tracking-[-0.01em] text-ink-strong">{priceDisplay.formattedTotal}</span>
-                                                        {priceDisplay.hasTaxInfo && (
-                                                            <span className="text-caption font-medium text-ink-muted">IVA incl.</span>
-                                                        )}
-                                                    </div>
-                                                </div>
-
-                                                {priceDisplay.hasTaxInfo && (
-                                                    <Accordion type="single" collapsible className="mt-1.5 w-full">
-                                                        <AccordionItem value="price-breakdown" className="border-none">
-                                                            <AccordionTrigger className="h-auto min-h-0 justify-start gap-1.5 py-1.5 text-caption font-normal text-ink-muted hover:text-ink-strong hover:no-underline">
-                                                                <span>Ver desglose de impuestos</span>
-                                                            </AccordionTrigger>
-                                                            <AccordionContent className="space-y-1 pb-0 pt-1">
-                                                                <div className="flex justify-between text-caption">
-                                                                    <span className="text-ink-muted">Base imponible</span>
-                                                                    <span className="font-medium text-ink-strong">{priceDisplay.formattedBase}</span>
-                                                                </div>
-                                                                <div className="flex justify-between text-caption">
-                                                                    <span className="text-ink-muted">IVA</span>
-                                                                    <span className="font-medium text-ink-strong">{priceDisplay.formattedTax}</span>
-                                                                </div>
-                                                            </AccordionContent>
-                                                        </AccordionItem>
-                                                    </Accordion>
-                                                )}
-                                            </div>
-                                        );
-                                    })()}
+                                    {renderPriceSummary()}
                             </div>
 
                                 {/* Cita — fecha, lugar y estado */}
@@ -2102,7 +2080,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                                 {/* ✅ Botones de acción para desktop - Según la guía - Fuera de needsAppointment para que siempre se muestren */}
                                 {(appointmentButtons.showCancel || appointmentButtons.showAccept || appointmentButtons.showReject) && (
-                                    <div className="mt-4 hidden pt-4 lg:block">
+                                    <div className="mt-4 hidden pt-4 md:block">
                                         <div className="space-y-3">
                                             {/* Información de la cita propuesta - Solo para experto cuando puede aceptar/rechazar */}
                                             {appointmentButtons.showAccept && appointment && appointment.proposedDate && appointment.proposedTime && (
@@ -2235,67 +2213,14 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
                             {/* Cliente */}
                             {search?.user && (
                                 <div className="pt-4">
-                                    <SdSectionTitle>Cliente</SdSectionTitle>
-                                    <div className="mt-2.5 flex items-center gap-3">
-                                        <Avatar className="h-9 w-9 shrink-0">
-                                            <AvatarImage
-                                                src={search.user.profilePictureUrl || undefined}
-                                                alt={search.user.name}
-                                            />
-                                            <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
-                                                {search.user.name?.charAt(0).toUpperCase() || 'C'}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="min-w-0 flex-1">
-                                            <p className="truncate text-meta font-medium text-ink-strong">{search.user.name}</p>
-                                            <p className="mt-0.5 truncate text-caption text-ink-muted">{search.user.email}</p>
-                                        </div>
-                                    </div>
+                                    {renderClienteBlock()}
                                 </div>
                             )}
 
                             {/* Experto */}
                             {expertData && (
                                 <div className="pt-4">
-                                    <SdSectionTitle>Experto</SdSectionTitle>
-                                    <div className="mt-2.5 flex items-center gap-3">
-                                        <Avatar className="h-9 w-9 shrink-0">
-                                            <AvatarImage
-                                                src={expertData.profilePictureUrl || undefined}
-                                                alt={expertData.name}
-                                            />
-                                            <AvatarFallback className="bg-line-soft text-meta font-semibold text-ink-muted">
-                                                {expertData.name?.charAt(0).toUpperCase()}
-                                            </AvatarFallback>
-                                        </Avatar>
-                                        <div className="min-w-0 flex-1">
-                                            <div className="flex items-center gap-1.5">
-                                                <p className="truncate text-meta font-medium text-ink-strong">{expertData.name}</p>
-                                                <VerifiedBadge className="h-4 w-4 shrink-0" />
-                                                {/* ✅ BANDERA DEL PAÍS DEL EXPERTO - Desktop */}
-                                                {(search?.searchHire?.expertCountry || serviceInfo?.expertCountry || expertProfile?.country) && (
-                                                    <CountryFlag
-                                                        countryCode={
-                                                            search?.searchHire?.expertCountry ||
-                                                            serviceInfo?.expertCountry ||
-                                                            expertProfile?.country ||
-                                                            null
-                                                        }
-                                                        size="sm"
-                                                    />
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                    {/* ✅ NUEVO: Mostrar disponibilidad del experto en desktop */}
-                                    {expertProfile?.currentAvailability && (
-                                        <div className="mt-2.5 pl-[48px]">
-                                            <ExpertAvailability
-                                                availability={expertProfile.currentAvailability}
-                                                compact={true}
-                                            />
-                                        </div>
-                                    )}
+                                    {renderExpertoBlock()}
                                 </div>
                             )}
 
@@ -2476,18 +2401,7 @@ export default function SearchDetails({ isAdmin, onBack, searchHireId: searchHir
 
                             {review && (
                                 <div className="space-y-2.5 pt-4">
-                                    <div className="flex items-center justify-between">
-                                        <SdSectionTitle>Reseña</SdSectionTitle>
-                                        <span className="inline-flex items-center gap-1 text-caption font-semibold text-ink-strong">
-                                            <Star className="h-3.5 w-3.5 fill-current" />
-                                            {review.score}/5
-                                        </span>
-                                    </div>
-                                    {review.description && (
-                                        <p className="rounded-xl bg-surface-tinted p-3 text-meta leading-relaxed text-ink">
-                                            {review.description}
-                                        </p>
-                                    )}
+                                    {renderExistingReview()}
                                 </div>
                             )}
 

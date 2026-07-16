@@ -39,7 +39,11 @@ export const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
       onClick={onClick}
       style={{ '--i': index } as React.CSSProperties}
       className={`category-picker-row-enter group relative flex w-full items-center gap-4 border-b border-line px-4 py-3 text-left transition-colors duration-200 last:border-b-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand active:scale-[0.99] ${
-        selected ? 'bg-brand/[0.05]' : 'hover:bg-surface-tinted active:bg-surface-tinted'
+        // hover:bg-surface-tinted (98% L) apenas se distinguía del fondo blanco del
+        // panel (delta ~5/255) — en desktop, donde el hover es la única señal de
+        // interactividad antes del clic, necesita más contraste. line-soft (92% L)
+        // no afecta a móvil (sin hover táctil).
+        selected ? 'bg-brand/[0.05]' : 'hover:bg-line-soft active:bg-line-soft'
       }`}
     >
       <div
@@ -66,12 +70,14 @@ export const CategoryPickerRow: React.FC<CategoryPickerRowProps> = ({
         </h3>
         {meta ? (
           <>
-            <p className="mt-0.5 truncate text-caption leading-snug text-ink-muted">
-              {meta.delivery}
+            {/* Precio primero y más grande: es el dato que decide la compra
+                (ver comentario del componente); antes compartía tamaño con el
+                texto secundario y quedaba enterrado. */}
+            <p className="mt-0.5 text-lead font-bold leading-none text-brand">
+              desde {meta.priceFromEur}€
             </p>
-            <p className="mt-1 text-meta leading-none">
-              <span className="font-semibold text-brand">desde {meta.priceFromEur}€</span>
-              <span className="text-ink-muted">{' · '}{meta.expertCount} expertos</span>
+            <p className="mt-1 truncate text-caption leading-snug text-ink-muted">
+              {meta.delivery} · {meta.expertCount} expertos
             </p>
           </>
         ) : (
