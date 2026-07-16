@@ -121,7 +121,9 @@ const HomePage: React.FC = () => {
                 <DesktopLanding />
               </Suspense>
             </div>
-            <Footer mobile />
+            {/* Footer solo en desktop (hidden md:block). En móvil el homepage cierra con
+                la MobileBottomBar; el footer denso se veía mal ahí. */}
+            <Footer />
           </>
         }
         bottomBar={

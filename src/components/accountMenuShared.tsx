@@ -9,11 +9,13 @@ import {
   Shield,
   Settings,
   User,
+  Sparkles,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { getAuthToken } from '../lib/auth';
 import { RoleChecker } from '../utils/roleChecker';
+import { canPreviewWelcome, openWelcomeScreen } from '../lib/welcomeScreen';
 
 /**
  * Fuente de verdad ÚNICA del menú de cuenta (desktop [AccountMenu] y móvil
@@ -86,8 +88,13 @@ export function buildAccountMenuGroups(opts: {
   /** Navega y (en móvil) cierra el menú. */
   go: (path: string) => void;
   openSettings: () => void;
+  /** Email del usuario: habilita el botón "Ver bienvenida" para cuentas autorizadas. */
+  userEmail?: string;
+  /** Reabre la WelcomeScreen y (en móvil) cierra el menú. */
+  openWelcome?: () => void;
 }): AccountMenuItem[][] {
-  const { isExpert, userIsAdmin, go, openSettings } = opts;
+  const { isExpert, userIsAdmin, go, openSettings, userEmail, openWelcome } = opts;
+  const showWelcome = canPreviewWelcome(userEmail);
   return [
     [
       // Ambas entradas van a la bandeja unificada, cada una con su filtro
@@ -109,6 +116,9 @@ export function buildAccountMenuGroups(opts: {
         ? [{ id: 'admin', label: 'Administración', icon: Shield, onClick: () => go('/admin') }]
         : []),
       { id: 'settings', label: 'Configuración', icon: Settings, onClick: openSettings },
+      ...(showWelcome && openWelcome
+        ? [{ id: 'welcome-preview', label: 'Ver bienvenida', icon: Sparkles, onClick: openWelcome }]
+        : []),
     ],
   ];
 }
