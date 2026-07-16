@@ -89,7 +89,8 @@ export const MobileProfileMenu: React.FC<MobileProfileMenuProps> = ({
     <Sheet open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <SheetContent
         side="bottom"
-        className="md:hidden max-h-[75dvh] gap-0 rounded-t-2xl border-0 p-0 pb-[max(12px,env(safe-area-inset-bottom))] data-[state=open]:duration-300 motion-reduce:animate-none [&>button]:hidden"
+        className="account-sheet-up md:hidden max-h-[75dvh] gap-0 rounded-t-2xl border-0 p-0 pb-[max(12px,env(safe-area-inset-bottom))] [&>button]:hidden"
+        overlayClassName="account-sheet-overlay"
         aria-describedby={undefined}
       >
         <SheetTitle className="sr-only">Menú de cuenta</SheetTitle>

@@ -107,24 +107,6 @@
   }
 }
 
-/* Picker "elige qué quieres revisar" — entrada escalonada de filas (mismo
-   patrón que .chat-suggestion-enter: este proyecto no tiene tailwindcss-animate). */
-@keyframes category-picker-row-in {
-  from {
-    opacity: 0;
-    transform: translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-.category-picker-row-enter {
-  animation: category-picker-row-in 200ms cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(var(--i, 0) * 35ms);
-}
-
 .chat-suggestion-enter {
   animation: chat-suggestion-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
   animation-delay: calc(var(--i, 0) * 45ms + 80ms);
@@ -192,7 +174,6 @@ body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
   .support-chat-fab-pulse.support-chat-fab-btn--dock,
   .support-chat-fab-pulse.support-chat-fab-btn--mobile,
   .chat-suggestion-enter,
-  .category-picker-row-enter,
   .chat-empty-enter,
   .chat-typing-dot,
   .expert-sparkle-marker,
@@ -600,10 +581,6 @@ body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
         --accent-foreground: 222.2 47.4% 11.2%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 210 40% 98%;
-        /* Variante de texto: --destructive (L 60.2%) da ~3.5:1 sobre blanco, por debajo
-           de AA 4.5:1. Úsala para texto/iconos sobre fondo claro; --destructive sigue
-           siendo la de fondo relleno (botones, dots). */
-        --destructive-text: 0 72% 38%;
         --border: 214.3 31.8% 91.4%;
         --input: 214.3 31.8% 91.4%;
         --ring: 222.2 84% 4.9%;
@@ -633,9 +610,6 @@ body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
         --warning: 32 95% 44%;
         --warning-tint: 40 90% 96%;
         --warning-border: 40 70% 88%;
-        /* Variante de texto: --warning (L 44%) da ~3.2:1 sobre blanco, por debajo de
-           AA 4.5:1. Úsala para texto sobre fondo claro (p.ej. sobre --warning-tint). */
-        --warning-text: 30 80% 28%;
         /* Calendario de citas — tintes alineados al azul de marca (210°), no semáforo verde/naranja */
         --avail-free: 210 55% 93%;
         --avail-low: 210 38% 86%;
@@ -664,7 +638,6 @@ body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
         --accent-foreground: 210 40% 98%;
         --destructive: 0 62.8% 30.6%;
         --destructive-foreground: 210 40% 98%;
-        --destructive-text: 0 70% 68%;
         --border: 217.2 32.6% 17.5%;
         --input: 217.2 32.6% 17.5%;
         --ring: 212.7 26.8% 83.9%;
@@ -690,7 +663,6 @@ body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
         --warning: 32 80% 55%;
         --warning-tint: 32 30% 18%;
         --warning-border: 32 25% 28%;
-        --warning-text: 32 75% 62%;
         --avail-free: 210 42% 24%;
         --avail-low: 210 32% 20%;
         --avail-full: 217 33% 18%;
@@ -2155,17 +2127,9 @@ input, textarea {
         animation: coordination-radio-settle 0.24s cubic-bezier(0.22, 1, 0.36, 1) both;
     }
 
-    /* Header wizard móvil: ola ink-strong. */
+    /* Header wizard móvil: ola ink-strong; el main arranca bajo el header (sin margen). */
     .checkout-wizard-header--wave {
         border-bottom: none;
-        margin-bottom: 0;
-    }
-    /* Pasos scroll: aire bajo la ola antes del contenido tinted. */
-    .checkout-wizard-header--wave-scroll {
-        margin-bottom: 14px;
-    }
-    /* Calendario / contenido que tuck bajo la ola: sin franja tinted intermedia. */
-    .checkout-wizard-header--wave-flush {
         margin-bottom: 0;
     }
     .checkout-wizard-header-wave {

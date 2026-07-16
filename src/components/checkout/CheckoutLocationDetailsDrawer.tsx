@@ -11,8 +11,6 @@ interface CheckoutLocationDetailsDrawerProps {
     expanded: boolean;
     onToggle: () => void;
     children: React.ReactNode;
-    /** Desplazamiento sobre el footer sticky del wizard (px). */
-    footerInsetPx?: number;
 }
 
 /** Drawer inferior de detalles de ubicación (móvil checkout — mismo patrón que horas). */
@@ -23,7 +21,6 @@ export function CheckoutLocationDetailsDrawer({
     expanded,
     onToggle,
     children,
-    footerInsetPx,
 }: CheckoutLocationDetailsDrawerProps) {
     const [entered, setEntered] = useState(false);
 
@@ -54,16 +51,9 @@ export function CheckoutLocationDetailsDrawer({
 
             <div
                 className={cn(
-                    'pointer-events-none fixed inset-x-0 z-[81] motion-reduce:transition-none lg:hidden',
-                    footerInsetPx == null || footerInsetPx <= 0
-                        ? cn('bottom-0', SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS)
-                        : undefined,
+                    'pointer-events-none fixed inset-x-0 bottom-0 z-[81] motion-reduce:transition-none lg:hidden',
+                    SD_CHECKOUT_MOBILE_FOOTER_PAD_BOTTOM_CLASS,
                 )}
-                style={
-                    footerInsetPx != null && footerInsetPx > 0
-                        ? { bottom: footerInsetPx }
-                        : undefined
-                }
                 aria-live="polite"
             >
                 <div

@@ -52,7 +52,7 @@ export function CheckoutMobileStepHeader({
             <div
                 className={cn(
                     trailing
-                        ? 'mt-2 flex flex-col gap-2 min-[360px]:flex-row min-[360px]:items-center min-[360px]:justify-between min-[360px]:gap-3'
+                        ? 'mt-2 flex flex-col gap-2 min-[390px]:flex-row min-[390px]:items-start min-[390px]:justify-between min-[390px]:gap-3'
                         : cn('flex items-start justify-between gap-3', !hideStepper && 'mt-3'),
                 )}
             >
@@ -86,7 +86,7 @@ export function CheckoutMobileStepHeader({
                         className={cn(
                             'shrink-0',
                             hideStepper
-                                ? 'min-[360px]:text-right'
+                                ? 'min-[390px]:pt-1 min-[390px]:text-right'
                                 : 'pt-1',
                         )}
                     >

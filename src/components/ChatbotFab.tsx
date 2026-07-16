@@ -288,9 +288,6 @@ export const ChatbotFab: React.FC = () => {
           ref={panelRef}
           id={PANEL_ID}
           side={isMobile ? 'bottom' : 'right'}
-          /* Escritorio: panel ligero acoplado, no modal — sin scrim que apague el resto de
-             la página (el móvil ocupa toda la pantalla, así que el overlay por defecto no se ve). */
-          overlayClassName={!isMobile ? 'bg-transparent' : undefined}
           onCloseAutoFocus={(e) => {
             e.preventDefault();
             fabRef.current?.focus();

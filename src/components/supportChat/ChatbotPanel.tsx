@@ -266,7 +266,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
                         aria-disabled={isLoading}
                         onClick={() => handleSuggested(q)}
                         className={cn(
-                          'group flex w-full min-h-11 items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left transition-colors',
+                          'group flex w-full items-center justify-between gap-3 rounded-lg px-2 py-2.5 text-left transition-colors',
                           'hover:bg-surface-tinted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand',
                           'disabled:cursor-not-allowed disabled:opacity-50',
                         )}
@@ -292,6 +292,14 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
                   </button>
                 )}
               </section>
+
+              <Link
+                to="/faq"
+                onClick={onClose}
+                className="mt-5 block rounded px-2 text-meta font-medium text-ink-muted underline-offset-4 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+              >
+                Ver todas las preguntas frecuentes
+              </Link>
             </div>
           ) : (
             <div className={READING_WIDTH}>
@@ -330,11 +338,11 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
                       )}
                       {failed && (
                         <div role="alert" className="rounded-lg bg-destructive/5 px-3 py-2.5">
-                          <p className="text-meta leading-snug text-destructive-text">{error}</p>
+                          <p className="text-meta leading-snug text-destructive">{error}</p>
                           <button
                             type="button"
                             onClick={retry}
-                            className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-destructive-text transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
+                            className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-destructive focus-visible:ring-offset-2"
                           >
                             <RotateCcw className="h-3 w-3" strokeWidth={2.25} aria-hidden />
                             Reintentar
@@ -365,13 +373,10 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
 
       <form
         onSubmit={handleSubmit}
-        className="shrink-0 border-t border-line bg-white px-3.5 py-2.5 pb-[calc(0.625rem+env(safe-area-inset-bottom,0px))] md:px-5"
+        className="shrink-0 border-t border-line bg-white px-4 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] md:px-5"
       >
         <div className={READING_WIDTH}>
-          {/* Relleno tintado (no blanco+borde marcado) para que la píldora no lea como
-              una caja aparte flotando sobre el fondo blanco — mismo lenguaje que el
-              composer de PreHireChat. */}
-          <div className="flex items-end gap-2 rounded-2xl border border-line bg-surface-tinted py-1.5 pl-3.5 pr-1.5 transition-colors duration-150 focus-within:border-brand/50 focus-within:bg-white focus-within:ring-2 focus-within:ring-brand/15">
+          <div className="flex items-end gap-2 rounded-2xl border border-line bg-white py-1.5 pl-3.5 pr-1.5 transition-[border-color,box-shadow] duration-150 focus-within:border-brand focus-within:shadow-[0_0_0_3px_hsl(var(--brand)/0.12)]">
             <textarea
               ref={inputRef}
               rows={1}
@@ -389,7 +394,7 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
               disabled={isLoading}
               enterKeyHint="send"
               /* text-base en móvil evita el auto-zoom de iOS al enfocar. */
-              className="min-h-[40px] flex-1 resize-none overflow-y-auto bg-transparent py-[0.4rem] text-base leading-5 text-ink-strong placeholder:text-ink-muted focus:outline-none disabled:opacity-60 md:text-sm"
+              className="min-h-[40px] flex-1 resize-none overflow-y-auto bg-transparent py-2 text-base leading-5 text-ink-strong placeholder:text-ink-muted focus:outline-none disabled:opacity-60 md:text-sm"
               style={{ maxHeight: TEXTAREA_MAX_PX }}
               aria-label="Tu pregunta"
               aria-describedby="support-chat-input-hint"
@@ -397,30 +402,26 @@ export const ChatbotPanel: React.FC<ChatbotPanelProps> = ({ chat, onClose, layou
             <button
               type="submit"
               disabled={!canSend}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors duration-150 hover:bg-brand-hover active:bg-brand-hover disabled:cursor-not-allowed disabled:bg-transparent disabled:text-ink-soft motion-reduce:active:scale-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-brand text-white transition-colors duration-150 hover:bg-brand-hover active:bg-brand-hover disabled:cursor-not-allowed disabled:bg-line disabled:text-ink-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 motion-reduce:active:scale-100"
               aria-label="Enviar pregunta"
             >
               <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.4} aria-hidden />
             </button>
           </div>
-          {/* Contador solo cuando importa (cerca/fuera de límite) — en reposo no añade
-              una línea de ruido permanente bajo la píldora. */}
-          {(isNearLimit || isOverLimit) && (
-            <p
-              id="support-chat-input-hint"
-              className={cn(
-                'mt-1 text-right text-caption tabular-nums transition-colors',
-                isOverLimit ? 'text-destructive-text' : 'text-warning-text',
-              )}
-              aria-live="polite"
-            >
-              {draftLen}/{MAX_MESSAGE_LENGTH}
-            </p>
-          )}
+          <p
+            id="support-chat-input-hint"
+            className={cn(
+              'mt-1 text-right text-caption tabular-nums transition-colors',
+              isOverLimit ? 'text-destructive' : isNearLimit ? 'text-warning' : 'text-ink-soft',
+            )}
+            aria-live="polite"
+          >
+            {draftLen}/{MAX_MESSAGE_LENGTH}
+          </p>
           <Link
             to="/faq"
             onClick={onClose}
-            className="mt-2 block rounded text-center text-meta font-medium text-ink-muted underline-offset-4 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+            className="mt-2.5 block rounded text-center text-meta font-medium text-ink-muted underline-offset-4 transition-colors hover:text-brand hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
           >
             Ver preguntas frecuentes
           </Link>

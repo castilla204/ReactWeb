@@ -22,31 +22,11 @@ export const HP_MOBILE_HERO_PEEK_RESERVE_CLASS = 'h-2.5 shrink-0';
 /** Tabs categoría */
 export const HP_MOBILE_TABS_NAV_CLASS = 'bg-white md:hidden px-4 pb-1.5 pt-1.5';
 export const HP_MOBILE_TABS_SCROLLER_CLASS =
-  'flex snap-x snap-mandatory gap-3 overflow-x-auto scrollbar-hide pr-1 min-[390px]:gap-4';
-
-/** Variante B-lite — chip solo en tab activo; inactivos texto plano (baseline: underline en backup/homepage-tabs-underline-baseline). */
-export const HP_MOBILE_CATEGORY_TAB_BTN_CLASS =
-  'inline-flex min-h-11 shrink-0 snap-start items-center border-0 bg-transparent px-0 py-2 touch-manipulation focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2';
-
-export const HP_MOBILE_CATEGORY_TAB_LABEL_BASE_CLASS =
-  'inline-flex items-center whitespace-nowrap text-sm leading-snug min-[390px]:text-body transition-[background-color,box-shadow,color] duration-200';
-
-export const HP_MOBILE_CATEGORY_TAB_INACTIVE_PRIMARY_CLASS =
-  'px-0.5 py-1 font-normal text-ink-muted';
-
-export const HP_MOBILE_CATEGORY_TAB_INACTIVE_DRAWER_CLASS =
-  'px-0.5 py-1 font-normal text-ink-muted';
-
-/** Activo — pill brand tint (paridad MAP_META_CHIP). */
-export const HP_MOBILE_CATEGORY_TAB_ACTIVE_CHIP_CLASS =
-  'rounded-full bg-brand/[0.08] px-3.5 py-1.5 font-semibold text-brand ring-1 ring-brand/15';
-
-/** Aire terminal del muro sobre tab bar — token md (16px); shell sigue reservando solo clearance nav. */
-export const HP_MOBILE_WALL_BOTTOM_INSET_CLASS = 'pb-4 md:pb-0';
+  'flex snap-x snap-mandatory gap-4 overflow-x-auto scrollbar-hide pr-1 min-[390px]:gap-5';
 
 /** Contenedor del muro (Suspense + live) */
 export const HP_MOBILE_WALL_OUTER_CLASS =
-  `w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 ${HP_MOBILE_WALL_BOTTOM_INSET_CLASS}`;
+  'w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-0 md:pb-0';
 
 /** Muro: primera sección y separación entre carruseles */
 export const HP_MOBILE_WALL_FIRST_SECTION_CLASS = 'pt-3 md:pt-4';
@@ -81,3 +61,13 @@ export const HP_MOBILE_SEARCH_PILL_IDLE_BORDER_CLASS = 'border-line';
 
 export const HP_MOBILE_SEARCH_PILL_ACTIVE_BORDER_CLASS = 'border-brand/25';
 
+/** Modal búsqueda móvil — alineado con header compact (0.5rem safe-area, px-4). */
+export const HP_MOBILE_SEARCH_MODAL_FLOATING_BAR_CLASS =
+  'absolute left-4 right-4 z-20 flex items-center justify-between top-[max(0.5rem,env(safe-area-inset-top,0px))]';
+
+/** Espacio bajo botones flotantes (≈48px) + safe-area top. */
+export const HP_MOBILE_SEARCH_MODAL_HEADER_CLASS =
+  'px-4 pb-4 pt-[calc(max(0.5rem,env(safe-area-inset-top,0px))+3rem)]';
+
+export const HP_MOBILE_SEARCH_MODAL_BODY_CLASS =
+  'flex-1 overflow-y-auto px-4 pt-2 pb-[max(1.5rem,env(safe-area-inset-bottom,0px))]';

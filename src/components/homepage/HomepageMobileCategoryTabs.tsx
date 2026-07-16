@@ -1,15 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 
 import { HP_FONT } from '../../constants/homepageTypography';
-import {
-  HP_MOBILE_CATEGORY_TAB_ACTIVE_CHIP_CLASS,
-  HP_MOBILE_CATEGORY_TAB_BTN_CLASS,
-  HP_MOBILE_CATEGORY_TAB_INACTIVE_DRAWER_CLASS,
-  HP_MOBILE_CATEGORY_TAB_INACTIVE_PRIMARY_CLASS,
-  HP_MOBILE_CATEGORY_TAB_LABEL_BASE_CLASS,
-  HP_MOBILE_TABS_NAV_CLASS,
-  HP_MOBILE_TABS_SCROLLER_CLASS,
-} from '../../constants/homepageMobileRhythm';
+import { HP_MOBILE_TABS_NAV_CLASS, HP_MOBILE_TABS_SCROLLER_CLASS } from '../../constants/homepageMobileRhythm';
 import { cn } from '../../lib/utils';
 import { dispatchHomepagePickCategory } from '../../utils/homepageCategoryPick';
 
@@ -22,22 +14,15 @@ export const MOBILE_HOMEPAGE_CATEGORY_TABS = [
   { id: 12, label: 'Fontanería', kind: 'drawer' as const },
 ] as const;
 
-/**
- * Cámaras/Fontanería filtran el muro pero aún no se pueden contratar desde
- * "elige qué quieres revisar" (ver CATEGORY_META en data/categoryMeta.ts —
- * comentario "cuando pase a activa"). El badge deja claro que solo se puede
- * explorar contenido, no reservar todavía.
- */
-const DRAWER_TAB_HINT = 'Próximamente — de momento solo para explorar';
+const DRAWER_TAB_HINT = 'Categoría adicional';
 
 interface HomepageMobileCategoryTabsProps {
   activeCategoryId: number;
 }
 
 /**
- * Categorías móvil bajo el hero — variante B-lite: chip brand solo en activo; inactivos texto plano.
- * Baseline (subrayado editorial): rama `backup/homepage-tabs-underline-baseline`.
- * Cámaras/Fontanería: separador visual + misma tinta inactiva (el separador marca 2.º orden).
+ * Categorías móvil bajo el hero — texto + `border-b-2 border-brand` activo (DESIGN.md §Navigation).
+ * Cámaras/Fontanería usan flujo extendido (borde discontinuo + separador).
  * Sincroniza con AirbnbSearchBar vía `dispatchHomepagePickCategory`.
  */
 export const HomepageMobileCategoryTabs: React.FC<HomepageMobileCategoryTabsProps> = ({
@@ -77,14 +62,7 @@ export const HomepageMobileCategoryTabs: React.FC<HomepageMobileCategoryTabsProp
     const scroller = scrollerRef.current;
     if (!scroller) return;
     const activeEl = scroller.querySelector<HTMLElement>('[data-active="true"]');
-    const reduceMotion =
-      typeof window !== 'undefined' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    activeEl?.scrollIntoView({
-      behavior: reduceMotion ? 'auto' : 'smooth',
-      block: 'nearest',
-      inline: 'nearest',
-    });
+    activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   }, [activeCategoryId]);
 
   const firstDrawerIndex = MOBILE_HOMEPAGE_CATEGORY_TABS.findIndex((tab) => tab.kind === 'drawer');
@@ -114,32 +92,27 @@ export const HomepageMobileCategoryTabs: React.FC<HomepageMobileCategoryTabsProp
                 <button
                   type="button"
                   data-active={isActive ? 'true' : undefined}
-                  aria-current={isActive ? 'true' : undefined}
+                  aria-current={isActive ? 'page' : undefined}
                   aria-label={isDrawer ? `${tab.label}. ${DRAWER_TAB_HINT}` : tab.label}
                   onClick={() => dispatchHomepagePickCategory(tab.id, tab.label)}
-                  className={HP_MOBILE_CATEGORY_TAB_BTN_CLASS}
+                  className={cn(
+                    'inline-flex min-h-11 shrink-0 snap-start items-center border-0 bg-transparent px-0 py-2.5 touch-manipulation',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
+                  )}
                   style={{ fontFamily: HP_FONT }}
                 >
                   <span
                     className={cn(
-                      HP_MOBILE_CATEGORY_TAB_LABEL_BASE_CLASS,
+                      'inline-block whitespace-nowrap border-b-2 pb-1 text-sm leading-snug min-[390px]:text-body',
                       isActive
-                        ? HP_MOBILE_CATEGORY_TAB_ACTIVE_CHIP_CLASS
+                        ? 'border-brand font-semibold text-ink'
                         : isDrawer
-                          ? HP_MOBILE_CATEGORY_TAB_INACTIVE_DRAWER_CLASS
-                          : HP_MOBILE_CATEGORY_TAB_INACTIVE_PRIMARY_CLASS,
+                          ? 'border-transparent font-normal text-ink-soft'
+                          : 'border-transparent font-normal text-ink-muted',
                     )}
                   >
                     {tab.label}
                   </span>
-                  {isDrawer && (
-                    <span
-                      aria-hidden
-                      className="ml-1 inline-flex h-4 shrink-0 items-center self-center rounded-full bg-ink-strong/70 px-1.5 text-[10px] font-bold uppercase leading-none tracking-[0.04em] text-white"
-                    >
-                      Pronto
-                    </span>
-                  )}
                 </button>
               </React.Fragment>
             );

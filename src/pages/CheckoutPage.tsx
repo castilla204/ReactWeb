@@ -29,6 +29,7 @@ import {
     isValidSellerEmail,
 } from '../components/checkout/CheckoutSellerCoordinationFields';
 import { CheckoutDesktopLocationStepBody } from '../components/checkout/CheckoutDesktopLocationStepBody';
+import { CheckoutSellerChoiceMobileWarning } from '../components/checkout/CheckoutSellerChoiceLocked';
 import { readCheckoutCoordinationFromState, type CheckoutCoordinationPayload } from '../utils/checkoutCoordination';
 import { getAuthToken } from '../lib/auth';
 import {
@@ -54,9 +55,6 @@ import {
     SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS,
     SD_CHECKOUT_MOBILE_CHOOSE_BODY_CLASS,
-    SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_BODY_CLASS,
-    SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_SHELL_CLASS,
-    SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_STACK_CLASS,
     SD_CHECKOUT_MOBILE_STATUS_NOTE_CLASS,
     SD_CHECKOUT_MOBILE_STEP_DESC_EMPHASIS_ON_DARK_CLASS,
     SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_ON_DARK_CLASS,
@@ -694,7 +692,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     <button
                         type="button"
                         onClick={() => navigate(-1)}
-                        className="inline-flex h-11 items-center justify-center rounded-full bg-brand px-7 text-body font-semibold text-white transition-colors hover:bg-brand-hover active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2"
+                        className="inline-flex h-11 items-center justify-center rounded-full bg-ink-strong px-7 text-body font-semibold text-white transition-colors hover:bg-ink active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2"
                     >
                         Volver
                     </button>
@@ -777,6 +775,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
         />
     )
 ) : null;
+    const slotPickerMobileNode =
+        requiresAppointment && !isDesktop && coordinationMode === 'self' ? (
+            <SlotPicker {...slotPickerProps} embedded bare sectionTitle="Fecha y hora" />
+        ) : null;
+
     // 🗓️ Fase E: ubicación. Radio>0 → el cliente la elige en el mapa; estático (radio 0) → taller del experto.
     const eLat = Number(service.expert?.latitude);
     const eLng = Number(service.expert?.longitude);
@@ -808,6 +811,10 @@ export function CheckoutPage({}: CheckoutPageProps) {
             controlledLocation={chosenLocation}
         />
     ) : null;
+    const locationPickerWizardNode =
+        requiresAppointment && coordinationMode === 'self' ? (
+            <CheckoutLocationPicker {...locationPickerProps} variant="wizard" />
+        ) : null;
 
     const priceInfo = formatPriceDisplay(finalTotal);
     const priceDisplayNode = priceInfo.wasConverted ? (
@@ -910,6 +917,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
             steps={coordinationMode === 'seller' ? MOBILE_SELLER_PREVIEW_STEPS : MOBILE_SELF_STEPS}
             hideStepper
             title="Revisa y reserva"
+            description="Comprueba que todo está bien antes de pagar."
             trailing={
                 <div className="text-right">
                     <p className={SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_ON_DARK_CLASS}>
@@ -1051,7 +1059,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
     const coordCanContinue =
         isCoordOptionPickView
             ? !!coordSelection && !(coordSelection === 'seller' && sellerOptionDisabled)
-            : coordView === 'seller-plazos' || coordView === 'seller-map' || coordView === 'seller-contact'
+            : coordView === 'seller-plazos' || coordView === 'seller-map'
               ? true
               : sellerCoordinationCanContinue(sellerPhone, sellerEmail);
     const handleCoordPrimary = () => {
@@ -1066,17 +1074,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
             else setCoordView('seller-map');
             return;
         }
-        if (coordView === 'seller-map') {
-            setCoordView('seller-contact');
-            return;
-        }
-        if (coordView === 'seller-contact') {
-            if (!sellerCoordinationCanContinue(sellerPhone, sellerEmail)) {
-                setShowSellerValidation(true);
-                return;
-            }
-            confirmCoordinationSeller();
-        }
+                if (coordView === 'seller-map') {
+                    setCoordView('seller-contact');
+                    return;
+                }
+                confirmCoordinationSeller();
     };
     const handleCoordBack = () => {
         if (coordView === 'seller-contact') {
@@ -1260,7 +1262,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 type="button"
                 onClick={handleDesktopContinue}
                 disabled={!desktopContinueReady}
-                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-brand px-7 text-body font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
+                className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-full bg-ink-strong px-7 text-body font-semibold text-white transition-colors hover:bg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none motion-reduce:active:scale-100"
             >
                 Continuar
                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
@@ -1274,7 +1276,7 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 type="button"
                 onClick={handleDesktopContinue}
                 disabled={!desktopContinueReady}
-                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-brand px-7 text-body font-semibold text-white transition-colors hover:bg-brand-hover focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                className="inline-flex h-11 shrink-0 items-center justify-center gap-2 rounded-full bg-ink-strong px-7 text-body font-semibold text-white transition-colors hover:bg-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ink-strong focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
                 Continuar
                 <ArrowRight className="h-4 w-4 shrink-0" aria-hidden />
@@ -1471,7 +1473,6 @@ export function CheckoutPage({}: CheckoutPageProps) {
                                 {...locationPickerProps}
                                 variant="wizard"
                                 referenceMode
-                                footerInsetPx={mobileFooterScrollPad}
                             />
                         </CheckoutMobileWizardShell>
                     ) : coordView === 'choose' ? (
@@ -1515,6 +1516,12 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             }
                         >
                             <div className={mobileContentWidthClass}>
+                                {isWorkshopOnly ? (
+                                    <CheckoutSellerChoiceMobileWarning
+                                        variant="calendar"
+                                        className="mb-3"
+                                    />
+                                ) : null}
                                 <SlotPicker
                                     {...slotPickerProps}
                                     embedded
@@ -1555,7 +1562,9 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             }
                             bodyClassName={cn(SD_CHECKOUT_MOBILE_CHOOSE_BODY_CLASS, mobileContentWidthClass)}
                         >
-                            {coordinationStepMobileNode}
+                            <div className={mobileContentWidthClass}>
+                                {coordinationStepMobileNode}
+                            </div>
                         </CheckoutMobileWizardShell>
                     )
                 ) : mobileThreeStep && mobileStep === 2 ? (
@@ -1571,20 +1580,11 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             />
                         }
                     >
-                        <CheckoutLocationPicker
-                            {...locationPickerProps}
-                            variant="wizard"
-                            footerInsetPx={mobileFooterScrollPad}
-                        />
+                        {locationPickerWizardNode}
                     </CheckoutMobileWizardShell>
                 ) : mobileThreeStep && mobileStep === 1 ? (
                     <CheckoutMobileWizardShell
-                        className={SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_SHELL_CLASS}
                         footerInsetPx={mobileFooterScrollPad}
-                        bodyClassName={cn(
-                            SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_BODY_CLASS,
-                            mobileContentWidthClass,
-                        )}
                         header={
                             <CheckoutMobileStepHeader
                                 step={mobileStep + 1}
@@ -1594,14 +1594,8 @@ export function CheckoutPage({}: CheckoutPageProps) {
                             />
                         }
                     >
-                        <div className={SD_CHECKOUT_MOBILE_WIZARD_CALENDAR_STACK_CLASS}>
-                            <SlotPicker
-                                {...slotPickerProps}
-                                embedded
-                                bare
-                                sectionTitle="Fecha y hora"
-                                footerInsetPx={mobileFooterScrollPad}
-                            />
+                        <div className={mobileContentWidthClass}>
+                            {slotPickerMobileNode}
                         </div>
                     </CheckoutMobileWizardShell>
                 ) : mobileThreeStep && mobileStep === 3 ? (
@@ -1622,9 +1616,6 @@ export function CheckoutPage({}: CheckoutPageProps) {
                     <CheckoutMobileWizardShell
                         key="checkout-mobile-payment"
                         header={mobilePaymentHeaderNode}
-                        // Paso resumen: sin barra de avance ni descripción → la banda oscura
-                        // puede ser mucho más baja (pb-4 en vez del pb-6 compartido).
-                        headerClassName="pb-4"
                         footerInsetPx={mobileFooterScrollPad}
                         trustFooterFallback
                     >
