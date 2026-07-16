@@ -3044,7 +3044,7 @@ img[alt*="country"],
     }
     .account-menu-pop[data-state="open"] {
         transform-origin: var(--radix-dropdown-menu-content-transform-origin, top right);
-        animation: account-menu-pop 160ms cubic-bezier(0.16, 1, 0.3, 1);
+        animation: account-menu-pop 160ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
 
     @keyframes account-sheet-up {
@@ -3064,10 +3064,10 @@ img[alt*="country"],
         }
     }
     .account-sheet-up[data-state="open"] {
-        animation: account-sheet-up 280ms cubic-bezier(0.22, 1, 0.36, 1);
+        animation: account-sheet-up 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
     }
     .account-sheet-up[data-state="closed"] {
-        animation: account-sheet-down 200ms cubic-bezier(0.4, 0, 1, 1);
+        animation: account-sheet-down 200ms cubic-bezier(0.4, 0, 1, 1) forwards;
     }
 
     @keyframes account-overlay-fade {
@@ -3079,9 +3079,9 @@ img[alt*="country"],
         }
     }
     .account-sheet-overlay[data-state="open"] {
-        animation: account-overlay-fade 280ms ease-out;
+        animation: account-overlay-fade 280ms ease-out forwards;
     }
     .account-sheet-overlay[data-state="closed"] {
-        animation: account-overlay-fade 200ms ease-in reverse;
+        animation: account-overlay-fade 200ms ease-in reverse forwards;
     }
 }
