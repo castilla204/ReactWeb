@@ -25,7 +25,7 @@ interface ServiceFormProps {
     handleImageSelect: (e: React.ChangeEvent) => void;
     removeImage: (index: number) => void;
     handleCreateService: (e: React.FormEvent) => void;
-    serviceTypes: { id: number; name: string }[];
+    serviceTypes: { id: number; name: string; requiresAppointment?: boolean }[];
     isLoadingServiceTypes: boolean;
     isCreatingService: boolean;
     categories: CategoryWithDetailsDto[] | undefined;
@@ -281,6 +281,7 @@ export function ServiceForm({
                 return {
                     id: (st.id ?? stAny.Id) as number | null,
                     name: String(st.name ?? stAny.Name ?? ''),
+                    requiresAppointment: Boolean(st.requiresAppointment ?? stAny.RequiresAppointment),
                 };
             })
             .filter((st): st is NonNullable<typeof st> => st !== null && st.id != null && st.name !== '');
@@ -629,7 +630,10 @@ export function ServiceForm({
     }, [inspectionCatalog, inspectionConfig]);
 
     const isSaving = editingService ? isUpdatingService : isCreatingService;
-    const showDuration = parseInt(formData.serviceTypeId, 10) === 1;
+    const selectedServiceType = normalizedServiceTypes.find(
+        (t) => t.id === parseInt(formData.serviceTypeId, 10),
+    );
+    const showDuration = selectedServiceType?.requiresAppointment === true;
 
     // ¿Hay algo que guardar/publicar? Si no, el botón se apaga y se deshabilita.
     // Sesgamos hacia "encendido" en casos dudosos: nunca queremos bloquear un

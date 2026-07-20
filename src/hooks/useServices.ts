@@ -140,6 +140,7 @@ export function useServices({
     const [isCreatingService, setIsCreatingService] = useState(false);
     const [isDeletingService, setIsDeletingService] = useState(false);
     const [isUpdatingService, setIsUpdatingService] = useState(false);
+    const [isReactivatingService, setIsReactivatingService] = useState(false);
 
     const servicesQuery = useQuery({
         queryKey: ['services', expertProfileId || categoryId, serviceTypeId, latitude, longitude, locationRange, page, pageSize],
@@ -172,7 +173,10 @@ export function useServices({
                 }
                 params.append('page', page.toString());
                 params.append('pageSize', pageSize.toString());
-                
+                // El dueño del panel también debe ver (y poder reactivar) sus servicios
+                // pausados; el backend solo honra esto si el token pertenece a este experto.
+                params.append('includeInactive', 'true');
+
                 url = `${API_CONFIG.baseUrl}${API_CONFIG.endpoints.expert.services.getByExpert(expertProfileId)}?${params.toString()}`;
             } else {
                 if (!categoryId || categoryId <= 0 || !serviceTypeId || serviceTypeId <= 0 || !latitude || !longitude || !locationRange || locationRange <= 0) {
@@ -393,14 +397,16 @@ export function useServices({
                 }
             }
             
-            // Filtrar solo servicios activos (tanto para panel de experto como para clientes)
-            const filteredData = services.filter(service => {
-                const isActive = service.isActive !== false;
-                return isActive;
-            });
-            
+            // Filtrar solo servicios activos para clientes/búsqueda pública. En el panel
+            // del propio experto (expertProfileId) NO se filtra: el backend ya decide qué
+            // incluir vía includeInactive, y el experto necesita ver (y reactivar) sus
+            // servicios pausados.
+            const filteredData = expertProfileId
+                ? services
+                : services.filter(service => service.isActive !== false);
+
             console.log('🔍 useServices: Filtered services count:', filteredData.length);
-            
+
             return filteredData;
         },
         retry: 1,
@@ -776,6 +782,59 @@ export function useServices({
         },
     });
 
+    const reactivateServiceMutation = useMutation({
+        mutationFn: async (serviceId: number) => {
+            setIsReactivatingService(true);
+            const token = getAuthToken();
+            if (!token) {
+                console.log('No token found, signing out');
+                signOut();
+                throw new Error('No authentication token found');
+            }
+
+            const response = await fetch(API_CONFIG.endpoints.expert.services.reactivate(serviceId), {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                },
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    console.log('401 Unauthorized, signing out');
+                    signOut();
+                    throw new Error('No tienes permisos para reactivar este servicio');
+                }
+                if (response.status === 404) {
+                    throw new Error('Servicio no encontrado');
+                }
+                let errorMessage = `Error al reactivar servicio: ${response.statusText}`;
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.message || errorMessage;
+                } catch {
+                    // Ignore JSON parsing errors
+                }
+                throw new Error(errorMessage);
+            }
+
+            return true;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['services', expertProfileId || categoryId, serviceTypeId] });
+            queryClient.invalidateQueries({ queryKey: ['services-infinite'] });
+            queryClient.invalidateQueries({ queryKey: ['map-experts'] });
+            queryClient.invalidateQueries({ queryKey: ['map-markers'] });
+            queryClient.invalidateQueries({ queryKey: ['map-sidebar'] });
+        },
+        onError: (error) => {
+            console.error('Error reactivating service:', error);
+        },
+        onSettled: () => {
+            setIsReactivatingService(false);
+        },
+    });
+
     // Export the hook directly - can't call useQuery conditionally
     const useServiceByHireId = (hireId: number | null | undefined) => {
         console.log('[useServices] useServiceByHireId called with hireId:', hireId);
@@ -829,6 +888,8 @@ export function useServices({
         isUpdatingService,
         deleteService: deleteServiceMutation.mutateAsync,
         isDeletingService,
+        reactivateService: reactivateServiceMutation.mutateAsync,
+        isReactivatingService,
         useServiceByHireId,
     };
 }

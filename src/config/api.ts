@@ -161,6 +161,7 @@ export const API_CONFIG = {
                 get: (id: number) => `${API_PATH}/SearchService/${id}`,
                 getByExpert: (expertId: number) => `${API_PATH}/SearchService/expert/${expertId}`,
                 getByHireId: (hireId: number) => `${API_PATH}/SearchService/GetServiceByHireId/${hireId}`,
+                reactivate: (id: number) => `${API_PATH}/SearchService/${id}/reactivate`,
                 mapExperts: `${API_PATH}/SearchService/map-experts`,
                 homepageWall: `${API_PATH}/SearchService/homepage-wall`, // ✅ Endpoint público para homepage
                 detectedCountryFromIp: `${API_PATH}/SearchService/detected-country-from-ip`,

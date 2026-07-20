@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { ClipboardList, MessageCircle, Search as SearchIcon, X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { Button } from '../ui/button';
 import { API_CONFIG } from '../../config/api';
 import { useAuth } from '../../contexts/AuthContext';
 import { isAdmin as isAdminUser } from '../../utils/admin';
@@ -11,6 +12,7 @@ import { useIsMobile } from '../../hooks/useIsMobile';
 import { isActiveSearchHireStatus } from '../../constants/hireStatuses';
 import { ClientConversationSummaryDto, MessageSummaryDto } from '../../types/chat.types';
 import {
+    ConversationRowSkeleton,
     FILTER_LABELS,
     FilterTab,
     NEUTRAL_HIRE_STATUSES,
@@ -41,9 +43,6 @@ interface ExpertMessagesInboxProps {
  * Vive dentro de la pestaña "Mensajes" del panel del experto (sin chrome propio).
  */
 export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps) {
-    const { user } = useAuth();
-    const isUserAdmin =
-        isAdminUser(user?.email) || user?.role === 'Admin' || user?.role === 'admin';
     const { fetchApi } = useApi();
     const isMobile = useIsMobile();
 
@@ -187,8 +186,38 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
 
     if (isLoading) {
         return (
-            <div className="flex h-full min-h-[24rem] items-center justify-center">
-                <MessageCircle className="h-6 w-6 animate-pulse text-line" aria-hidden />
+            <div className="expert-messages-inbox grid h-full min-h-0 flex-1 grid-cols-1 overflow-hidden bg-white md:grid-cols-[minmax(280px,340px)_minmax(0,1fr)]">
+                <section className="flex min-h-0 min-w-0 flex-col md:bg-surface-tinted">
+                    <div className="shrink-0 space-y-3 border-b border-line-soft bg-white px-3 pb-3 pt-3 md:px-3.5 md:pt-3">
+                        <div className="h-10 w-full animate-pulse rounded-full bg-line-soft" />
+                        <div className="flex gap-1.5">
+                            <div className="h-8 w-16 animate-pulse rounded-full bg-line-soft" />
+                            <div className="h-8 w-24 animate-pulse rounded-full bg-line-soft" />
+                            <div className="h-8 w-28 animate-pulse rounded-full bg-line-soft" />
+                        </div>
+                    </div>
+                    <ul className="flex flex-col" aria-hidden>
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <li key={i}>
+                                <ConversationRowSkeleton index={i} isLast={i === 5} />
+                            </li>
+                        ))}
+                    </ul>
+                </section>
+                <section className="hidden min-h-0 flex-col bg-white px-6 py-5 md:flex" aria-hidden>
+                    <div className="flex items-center gap-3 border-b border-line-soft pb-4">
+                        <div className="h-11 w-11 shrink-0 animate-pulse rounded-full bg-line-soft" />
+                        <div className="flex-1 space-y-2">
+                            <div className="h-3.5 w-40 animate-pulse rounded-full bg-line-soft" />
+                            <div className="h-3 w-24 animate-pulse rounded-full bg-line-soft" />
+                        </div>
+                    </div>
+                    <div className="flex-1 space-y-3 pt-5">
+                        <div className="h-14 w-2/3 animate-pulse rounded-2xl bg-line-soft" />
+                        <div className="ml-auto h-10 w-1/2 animate-pulse rounded-2xl bg-line-soft" />
+                        <div className="h-16 w-3/4 animate-pulse rounded-2xl bg-line-soft" />
+                    </div>
+                </section>
             </div>
         );
     }
@@ -197,13 +226,9 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
         return (
             <div className="flex h-full min-h-[24rem] flex-col items-center justify-center gap-3 p-6 text-center">
                 <p className="text-body text-destructive">No pudimos cargar tus conversaciones.</p>
-                <button
-                    type="button"
-                    onClick={() => refetch()}
-                    className="rounded-full bg-brand px-5 py-2.5 text-meta font-semibold text-white transition-colors hover:bg-brand-hover"
-                >
+                <Button type="button" onClick={() => refetch()} className="expert-btn-brand">
                     Reintentar
-                </button>
+                </Button>
             </div>
         );
     }
@@ -252,7 +277,7 @@ export function ExpertMessagesInbox({ token, userId }: ExpertMessagesInboxProps)
                                 </button>
                             )}
                         </div>
-                        <div role="radiogroup" aria-label="Filtrar conversaciones" className="flex flex-wrap items-center gap-1.5">
+                        <div role="radiogroup" aria-label="Filtrar conversaciones" className="scrollbar-hide flex items-center gap-1.5 overflow-x-auto">
                             {(Object.keys(FILTER_LABELS) as FilterTab[]).map((tab) => {
                                 const active = filter === tab;
                                 const count = counts[tab];
@@ -389,7 +414,7 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
     const chip: { label: string; tone: StatusChipProps['tone']; icon?: 'shield' } | null = isPreHire
         ? { label: 'Consulta', tone: 'brand' }
         : statusLabel && !NEUTRAL_HIRE_STATUSES.has(statusLabel.toLowerCase())
-          ? { label: statusLabel, tone: tonFromHireStatus(statusLabel), icon: 'shield' }
+          ? { label: statusLabel, tone: tonFromHireStatus(statusLabel, conversation.hireStatus), icon: 'shield' }
           : { label: 'Contratación activa', tone: 'green', icon: 'shield' };
 
     return (
@@ -406,7 +431,7 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
             <div className="relative shrink-0">
                 <Avatar className="h-[52px] w-[52px] overflow-hidden rounded-full bg-line-soft">
                     <AvatarImage src={image} alt="" className="h-full w-full object-cover" />
-                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-title font-semibold text-white">
+                    <AvatarFallback className="bg-brand text-title font-semibold text-white">
                         {(client || title || '?').charAt(0).toUpperCase()}
                     </AvatarFallback>
                 </Avatar>
@@ -462,20 +487,21 @@ const ExpertConversationRow: React.FC<ExpertConversationRowProps> = ({
                             {snippet}
                         </span>
                     </p>
-                    {isUnread ? (
-                        <span
-                            className="inline-flex h-[20px] min-w-[20px] shrink-0 items-center justify-center rounded-full bg-brand px-1.5 text-kicker font-bold leading-none text-white"
-                            aria-label={`${unread} mensajes sin leer`}
-                        >
-                            {unread > 99 ? '99+' : unread}
-                        </span>
-                    ) : (
-                        amount && (
-                            <span className="shrink-0 text-caption font-semibold tabular-nums text-ink-soft">
+                    <div className="flex shrink-0 items-center gap-1.5">
+                        {amount && (
+                            <span className="text-caption font-semibold tabular-nums text-ink-soft">
                                 {amount}
                             </span>
-                        )
-                    )}
+                        )}
+                        {isUnread && (
+                            <span
+                                className="inline-flex h-[20px] min-w-[20px] items-center justify-center rounded-full bg-brand px-1.5 text-kicker font-bold leading-none text-white"
+                                aria-label={`${unread} mensajes sin leer`}
+                            >
+                                {unread > 99 ? '99+' : unread}
+                            </span>
+                        )}
+                    </div>
                 </div>
             </div>
 
@@ -522,7 +548,7 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
     const chip: { label: string; tone: StatusChipProps['tone']; icon?: 'shield' } = isPreHire
         ? { label: 'Consulta', tone: 'brand' }
         : statusLabel && !NEUTRAL_HIRE_STATUSES.has(statusLabel.toLowerCase())
-          ? { label: statusLabel, tone: tonFromHireStatus(statusLabel), icon: 'shield' }
+          ? { label: statusLabel, tone: tonFromHireStatus(statusLabel, conversation.hireStatus), icon: 'shield' }
           : { label: 'Contratación activa', tone: 'green', icon: 'shield' };
     const subtitle =
         (isPreHire
@@ -539,7 +565,7 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
                         alt=""
                         className="h-full w-full object-cover"
                     />
-                    <AvatarFallback className="bg-gradient-to-br from-brand to-brand-hover text-lead font-semibold text-white">
+                    <AvatarFallback className="bg-brand text-lead font-semibold text-white">
                         {client.charAt(0).toUpperCase()}
                     </AvatarFallback>
                 </Avatar>
@@ -576,8 +602,10 @@ const ExpertChatPanel: React.FC<ExpertChatPanelProps> = ({
                 <Suspense
                     fallback={
                         isPreHire ? (
-                            <div className="flex h-full items-center justify-center bg-white">
-                                <MessageCircle className="h-6 w-6 animate-pulse text-line" aria-hidden />
+                            <div className="flex h-full flex-col gap-3 overflow-hidden bg-white px-4 py-4" aria-hidden>
+                                <div className="h-14 w-2/3 animate-pulse rounded-2xl rounded-bl-sm bg-line-soft" />
+                                <div className="ml-auto h-10 w-1/2 animate-pulse rounded-2xl rounded-br-sm bg-line-soft" />
+                                <div className="h-16 w-3/4 animate-pulse rounded-2xl rounded-bl-sm bg-line-soft" />
                             </div>
                         ) : (
                             <SearchDetailsSkeleton embedded />

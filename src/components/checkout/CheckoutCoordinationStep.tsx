@@ -2,6 +2,7 @@
 import { CalendarDays, Info, Lock, Send } from 'lucide-react';
 import { motion, useReducedMotion, type Variants } from 'framer-motion';
 import type { CSSProperties, KeyboardEvent, ReactNode } from 'react';
+import { EscrowCoinMark } from '../EscrowCoinMark';
 import {
     CheckoutSellerCoordinationFields,
     CheckoutSelfCoordinationInfoNote,
@@ -461,8 +462,9 @@ function TrustRailAnimatedText({ text, className }: { text: string; className?: 
 
 /**
  * Nota de confianza animada — entrada con resorte + texto revelado palabra a
- * palabra, círculo verde + Lock (el mismo lenguaje visual que el badge de
- * escrow del resto de la app: ver HomepageTrustChip.tsx / HomepageMobileHeroTrustPill.tsx).
+ * palabra, disco azul de marca con moneda «moneda → depósito» (EscrowCoinMark),
+ * el mismo lenguaje visual que el badge de escrow del resto de la app: ver
+ * HomepageTrustChip.tsx / HomepageMobileHeroTrustPill.tsx).
  * Sin card propia (bg/border/shadow): vive dentro del footer fijo blanco del
  * checkout móvil (CheckoutMobileStickyFooter), no flotando en el cuerpo con
  * scroll — "sale del propio bottom bar" en vez de ser una tarjeta aparte.
@@ -478,12 +480,8 @@ export function CheckoutTrustNote({ lead, rest }: { lead: string; rest: string }
             animate={prefersReducedMotion ? undefined : 'visible'}
             variants={trustRailContainerVariants}
         >
-            <span className="relative mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground">
-                <span
-                    aria-hidden
-                    className="absolute inset-0 rounded-full bg-success/35 motion-safe:animate-[trust-rail-pulse_2.2s_ease-out_1]"
-                />
-                <Lock className="relative h-3 w-3" strokeWidth={2.25} aria-hidden />
+            <span className="relative mt-[1px] flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-brand">
+                <EscrowCoinMark coinPx={14} />
             </span>
             <p className="text-caption leading-[1.45] text-ink-muted">
                 {prefersReducedMotion ? (

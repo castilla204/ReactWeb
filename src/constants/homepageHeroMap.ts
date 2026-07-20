@@ -9,14 +9,9 @@ export const HERO_BANNER_WEBP = heroBannerWebp;
 /** @deprecated Usar HERO_BANNER_WEBP — alias móvil */
 export const MOBILE_HERO_PHOTO_PATH = HERO_BANNER_WEBP;
 
-/** Fracción del ancho cubierta por el panel de copy (desktop). Legacy map hero. */
-export const DESKTOP_HERO_MAP_OVERLAY_PADDING = 0.26;
-
-/** Viñeta suave bajo el copy desktop — legibilidad sin tapar el mapa derecho */
-export const DESKTOP_HERO_SOFT_OVAL =
-  `radial-gradient(ellipse 78% 105% at 18% 50%, ${HERO_DESKTOP_MAP_LITERAL.skyMuted} 0%, rgba(255,255,255,0.92) 32%, rgba(255,255,255,0.45) 48%, rgba(255,255,255,0.12) 62%, transparent 76%)`;
-
-/** Lavado lateral muy suave — solo funde copy+foto con el mapa, no apaga el canvas */
+/** Lavado lateral muy suave — usado por ExpertsAreaMap (fuera del hero desde el
+ *  rediseño foto-only; se conserva para su posible reutilización, p. ej. una
+ *  franja de cobertura dedicada). */
 export const DESKTOP_HERO_MAP_INTEGRATION_WASH = [
   `linear-gradient(90deg, rgba(250,250,250,0.5) 0%, rgba(250,250,250,0.16) 26%, transparent 44%)`,
   'linear-gradient(to top, rgba(255,255,255,0.08) 0%, transparent 14%)',
@@ -32,9 +27,12 @@ export const DESKTOP_HERO_MAP_POSTER = [
 export const DESKTOP_HERO_MIN_HEIGHT_CLASS =
   'min-h-[400px] lg:min-h-[500px] xl:min-h-[520px]';
 
-/** Máscara columna foto desktop — foto más transparente, fade largo hacia el mapa */
-export const DESKTOP_HERO_BANNER_MASK =
-  'linear-gradient(90deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.48) 38%, rgba(0,0,0,0.28) 55%, rgba(0,0,0,0.12) 72%, rgba(0,0,0,0.04) 86%, transparent 100%)';
+/** Costura foto→fondo en el hero desktop — feather corto que funde el borde
+ *  izquierdo de la foto (a sangre completa, sin máscara de opacidad) con
+ *  `bg-surface-tinted`. La foto ya trae su propia zona clara para el copy;
+ *  esto solo evita un corte duro donde empieza la imagen. */
+export const DESKTOP_HERO_PHOTO_SEAM_FADE =
+  'linear-gradient(90deg, hsl(var(--surface-tinted)) 0%, hsl(var(--surface-tinted) / 0.7) 40%, transparent 100%)';
 
 /**
  * Hero móvil — fondo "plano técnico": rejilla de puntos + halo agua (mismo tono

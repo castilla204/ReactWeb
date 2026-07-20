@@ -9,6 +9,7 @@ import { useKeyboardViewport } from '../hooks/useKeyboardViewport';
 import { useWindowSize } from '../hooks/useWindowSize';
 import { useSupportChat } from '../hooks/useSupportChat';
 import { hasCookieConsent } from './homepageTrustShared';
+import { APP_BANNER_STATE_EVENT, isAppBannerOccupyingCorner } from '../lib/appDownloadBanner';
 import {
   CHATBOT_FAB_BOTTOM_STANDALONE_CLASS,
   CHATBOT_FAB_BOTTOM_WITH_RESERVE_FOOTER_CLASS,
@@ -180,6 +181,8 @@ export const ChatbotFab: React.FC = () => {
   const [hintDismissed, setHintDismissed] = useState(getInitialHintDismissed);
   const [expertServicesFooter, setExpertServicesFooter] = useState(false);
   const [mobileSearchOverlay, setMobileSearchOverlay] = useState(false);
+  // El aviso "descarga la app" ocupa la misma esquina: cuando está, cedemos el sitio.
+  const [appBannerActive, setAppBannerActive] = useState(isAppBannerOccupyingCorner);
   const fabRef = useRef<HTMLButtonElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const hintId = useId();
@@ -192,7 +195,8 @@ export const ChatbotFab: React.FC = () => {
   const isHidden =
     CHATBOT_HIDDEN_PREFIXES.some((path) => location.pathname.startsWith(path))
     || isExpertPanelRoute(location.pathname)
-    || mobileSearchOverlay;
+    || mobileSearchOverlay
+    || appBannerActive;
   const mobileBottomClass = getMobileBottomClass(location.pathname, expertServicesFooter);
   const showHint = !hintDismissed && !isOpen;
   const hasConversation = chat.messages.length > 0;
@@ -206,11 +210,18 @@ export const ChatbotFab: React.FC = () => {
       const active = (event as CustomEvent<{ active?: boolean }>).detail?.active === true;
       setMobileSearchOverlay(active);
     };
+    const onAppBanner = (event: Event) => {
+      setAppBannerActive((event as CustomEvent<{ open?: boolean }>).detail?.open === true);
+    };
     window.addEventListener('expert-services-mobile-bar', onExpertServicesBar);
     window.addEventListener('mobile-search-overlay', onMobileSearchOverlay);
+    window.addEventListener(APP_BANNER_STATE_EVENT, onAppBanner);
+    // Sync por si el aviso reservó la esquina antes de montar este listener.
+    setAppBannerActive(isAppBannerOccupyingCorner());
     return () => {
       window.removeEventListener('expert-services-mobile-bar', onExpertServicesBar);
       window.removeEventListener('mobile-search-overlay', onMobileSearchOverlay);
+      window.removeEventListener(APP_BANNER_STATE_EVENT, onAppBanner);
     };
   }, []);
 

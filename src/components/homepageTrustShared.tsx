@@ -46,7 +46,7 @@ export function TrustPanelBody({
             </>
           ) : (
             <>
-              <p className="text-caption font-semibold text-success">
+              <p className="text-caption font-semibold text-brand">
                 {ESCROW_TRUST_CHIP_HEADLINE}
               </p>
               <p className="mt-1 text-lead font-semibold leading-tight tracking-[-0.015em] text-ink-strong text-pretty">

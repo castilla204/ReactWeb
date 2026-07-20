@@ -1,7 +1,8 @@
 import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, HelpCircle, Settings, User } from 'lucide-react';
+import { ArrowLeft, Bell, Briefcase, HelpCircle, Settings, User } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import { useAccountIdentity } from './accountMenuShared';
 import { isAdmin } from '../utils/admin';
 // ⚡ Lazy: LoginModal arrastra framer-motion (~16 kB gzip). Importado estático aquí cargaba
 //    framer en el bundle inicial de TODAS las páginas (App.tsx importa este top-bar eager),
@@ -82,6 +83,8 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
   const isCheckout = variant === 'checkout';
   const navigate = useNavigate();
   const { user, isAuthenticated } = useAuth();
+  // Detección de rol experto (rol o JWT) — misma fuente que el menú de cuenta.
+  const { isExpert } = useAccountIdentity();
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
 
   const userEmail = (user as { Email?: string; email?: string } | null)?.Email ?? user?.email;
@@ -113,6 +116,21 @@ export const HomepageDesktopTopBar: React.FC<HomepageDesktopTopBarProps> = ({
 
   const rightActions = (
     <div className="flex shrink-0 items-center gap-2">
+      {/* Acceso de primer nivel al panel de experto: antes solo estaba enterrado en
+          el dropdown de cuenta. El experto aterriza en la home de marketplace (puede
+          seguir contratando), pero ahora salta a su trabajo de un clic. Pill con
+          tinte de marca para que resalte sobre las acciones neutras del chrome. */}
+      {!isCheckout && isExpert ? (
+        <button
+          type="button"
+          onClick={() => navigate('/expert')}
+          className="inline-flex items-center gap-1.5 rounded-full border border-brand/30 bg-brand/5 px-3 py-1.5 text-meta font-semibold text-brand transition-colors hover:bg-brand/10"
+          aria-label="Ir a tu panel de experto"
+        >
+          <Briefcase className="h-4 w-4 shrink-0" strokeWidth={2.1} aria-hidden />
+          <span className="hidden lg:inline">Panel de experto</span>
+        </button>
+      ) : null}
       {!isCheckout ? (
         <button
           type="button"

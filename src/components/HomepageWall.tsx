@@ -103,14 +103,18 @@ export const ServiceCard: React.FC<ServiceCardProps> = React.memo(({ service, fo
       const result = await onToggleFavorite(service.id, nextFavorite);
       if (result) {
         setIsFavorite(result.isFavorite);
+        // Mismo `id` en ambos toasts: un toggle rápido (añadir → quitar) reemplaza
+        // el toast anterior en vez de apilarlo (Sileo hace update-in-place por id).
+        const toastId = `favorite-${service.id}`;
         if (result.isFavorite) {
           toast.info('Añadido a favoritos', {
+            id: toastId,
             description: 'Lo tienes guardado en tu lista de favoritos.',
             action: { label: 'Ver favoritos', onClick: () => navigate('/favorites') },
             duration: 3000,
           });
         } else {
-          toast.info('Quitado de favoritos', { duration: 2500 });
+          toast.info('Quitado de favoritos', { id: toastId, duration: 2500 });
         }
       }
     } catch (error: unknown) {

@@ -3,6 +3,8 @@ import { MOBILE_CONTENT_PADDING_BOTTOM_CLASS } from '../../constants/homepageTyp
 import { HomepageDesktopTrustWave } from '../HomepageDesktopTrustWave';
 
 interface HomePageShellProps {
+  /** Franja opcional arriba de todo (p. ej. atajo al panel para expertos). */
+  topStrip?: ReactNode;
   searchBar: ReactNode;
   hero: ReactNode;
   services: ReactNode;
@@ -25,6 +27,7 @@ interface HomePageShellProps {
  * Desktop: flujo en bloque con sombra del panel de servicios.
  */
 export const HomePageShell: React.FC<HomePageShellProps> = ({
+  topStrip,
   searchBar,
   hero,
   services,
@@ -48,6 +51,7 @@ export const HomePageShell: React.FC<HomePageShellProps> = ({
           .filter(Boolean)
           .join(' ')}
       >
+        {topStrip}
         {searchBar}
         {hero}
 

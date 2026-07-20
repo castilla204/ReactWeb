@@ -3,11 +3,13 @@ import { useLocation } from 'react-router-dom';
 import { HomepageMobileHero } from '../components/HomepageMobileHero';
 import { HomepageMobileCategoryTabs } from '../components/homepage/HomepageMobileCategoryTabs';
 import { HomePageShell } from '../components/homepage/HomePageShell';
+import { ExpertHomeStrip } from '../components/homepage/ExpertHomeStrip';
 import { HomeServicesLoading } from '../components/homepage/HomePageWallSkeleton';
 import { HomeSearchBarLoading } from '../components/homepage/HomeSearchBarLoading';
 import { HomeBottomBarLoading } from '../components/homepage/HomeBottomBarLoading';
 import { SEO } from '../components/SEO';
 import { Footer } from '../components/Footer';
+import { AppDownloadBanner } from '../components/AppDownloadBanner';
 import { FAQ_ITEMS } from '../content/faqContent';
 import { faqPageSchema } from '../utils/jsonLd';
 
@@ -93,6 +95,7 @@ const HomePage: React.FC = () => {
         jsonLd={[faqPageSchema(homeFaq)]}
       />
       <HomePageShell
+        topStrip={<ExpertHomeStrip />}
         searchBar={
           <Suspense fallback={<HomeSearchBarLoading />}>
             <AirbnbSearchBar onSearch={handleSearch} countryCode={countryCode} />
@@ -132,6 +135,9 @@ const HomePage: React.FC = () => {
           </Suspense>
         }
       />
+      {/* Aviso "descarga la app" (solo web, se auto-gatea). Fuera del shell: se posiciona
+          fijo por su cuenta y no debe heredar overflow/stacking del layout del homepage. */}
+      <AppDownloadBanner />
     </>
   );
 };

@@ -8,7 +8,6 @@
 //   4) processing   → llama execute.
 //   5) result       → muestra "ve a /become-expert" o error.
 import React, { useState, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
   X,
@@ -24,6 +23,9 @@ import {
   useExpertRelocation,
   RelocationPreflight,
 } from '../hooks/useExpertRelocation';
+import { Dialog, DialogClose, DialogContent } from './ui/dialog';
+import { Button } from './ui/button';
+import { SileoButton } from './ui/sileo-button';
 
 interface ExpertRelocationWizardProps {
   isOpen: boolean;
@@ -87,153 +89,132 @@ export const ExpertRelocationWizard: React.FC<ExpertRelocationWizardProps> = ({
     navigate(result?.nextStep || '/expert/join');
   };
 
-  if (!isOpen) return null;
-  if (typeof document === 'undefined') return null;
+  const isBusy = step === 'processing';
 
-  // 🛡️ Round 28 MUD-S: createPortal a document.body con z-index 10000.
-  // El wizard se monta dentro de un <Drawer> en ProfileEditForm — el Drawer (Vaul)
-  // renderiza overlay z=9997 y content z=9998 vía Portal. Sin createPortal aquí, el
-  // wizard queda dentro del Drawer tree con z-50 y los layers del Drawer lo tapan
-  // (invisible). Con portal + z-index 10000 inline (Tailwind perdería contra estilos
-  // inline de Vaul) el wizard pasa siempre por encima.
-  return createPortal(
-    <div
-      // 🛡️ Round 28 MUD-T: data-attribute para que los Drawers padre (Vaul) puedan
-      // distinguir clicks dentro del wizard vs "fuera del drawer" y NO bloquearlos.
-      // ProfileEditForm tiene onPointerDownOutside/onInteractOutside = preventDefault
-      // — sin este marker, los clicks del wizard quedan inertes.
-      data-relocation-wizard="true"
-      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4"
-      style={{ zIndex: 10000 }}
-    >
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+  return (
+    <Dialog open={isOpen} onOpenChange={(open) => { if (!open && !isBusy) onClose(); }}>
+      <DialogContent
+        // 🛡️ Round 28 MUD-T: marca el árbol del wizard para que los Drawer padres (Vaul)
+        // distingan clicks dentro del wizard de "fuera del drawer" y no los bloqueen.
+        data-relocation-wizard="true"
+        hideCloseButton
+        onEscapeKeyDown={(e) => { if (isBusy) e.preventDefault(); }}
+        onPointerDownOutside={(e) => { if (isBusy) e.preventDefault(); }}
+        onInteractOutside={(e) => { if (isBusy) e.preventDefault(); }}
+        // 🛡️ Round 28 MUD-S: z-index muy alto explícito — el trigger puede llegar justo
+        // cuando un Drawer padre (ProfileEditForm embebido, AccountSettingsModal) todavía
+        // está cerrando. DialogContent traslada este z-index también a su overlay (-1).
+        style={{ zIndex: 10000 }}
+        className="flex max-h-[85vh] w-[calc(100%-2rem)] max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl p-0"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-              <Plane className="w-5 h-5 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-gray-900">Mudarse a otro país</h2>
-              <p className="text-sm text-gray-500">Cierra tu cuenta Stripe Connect y empieza onboarding nuevo</p>
-            </div>
+        <div className="flex items-start gap-3 border-b border-border p-6">
+          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-brand/10">
+            <Plane className="h-5 w-5 text-brand" />
           </div>
-          {step !== 'processing' && (
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 transition-colors"
-              aria-label="Cerrar"
-            >
-              <X className="w-6 h-6" />
-            </button>
+          <div className="flex-1">
+            <h2 className="text-lg font-semibold text-foreground">Cambiar de país</h2>
+            <p className="text-sm text-muted-foreground">Cierra tu cuenta Stripe Connect y empieza onboarding nuevo</p>
+          </div>
+          {!isBusy && (
+            <DialogClose asChild>
+              <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" aria-label="Cerrar">
+                <X className="h-4 w-4" />
+              </Button>
+            </DialogClose>
           )}
         </div>
 
         {/* Body */}
-        <div className="p-6">
+        <div className="flex-1 overflow-y-auto p-6">
           {step === 'preflight' && (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
-              <p className="text-gray-600">Comprobando que puedes mudarte ahora mismo…</p>
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <Loader2 className="h-10 w-10 animate-spin text-brand" />
+              <p className="text-sm text-muted-foreground">Comprobando que puedes mudarte ahora mismo…</p>
             </div>
           )}
 
           {step === 'blocked' && preflight && (
             <div className="space-y-4">
-              <div className="flex items-start gap-3 bg-red-50 border border-red-200 rounded-lg p-4">
-                <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
+              <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
                 <div>
-                  <h3 className="font-semibold text-red-900">No puedes mudarte ahora</h3>
-                  <p className="text-sm text-red-800 mt-1">{preflight.blockedReason}</p>
+                  <h3 className="font-semibold text-foreground">No puedes mudarte ahora</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{preflight.blockedReason}</p>
                 </div>
               </div>
-              <ul className="space-y-2 text-sm text-gray-700">
+              <ul className="space-y-2 text-sm text-muted-foreground">
                 {preflight.pendingDisputes > 0 && (
-                  <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-red-500"></span>
-                    {preflight.pendingDisputes} disputa(s) activa(s)
-                  </li>
+                  <li>{preflight.pendingDisputes} disputa(s) activa(s)</li>
                 )}
                 {preflight.activeHires > 0 && (
-                  <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                    {preflight.activeHires} contratación(es) en curso
-                  </li>
+                  <li>{preflight.activeHires} contratación(es) en curso</li>
                 )}
                 {preflight.recentRefunds > 0 && (
-                  <li className="flex items-center gap-2">
-                    <span className="w-2 h-2 rounded-full bg-yellow-500"></span>
-                    {preflight.recentRefunds} refund(s) en las últimas 24h
-                  </li>
+                  <li>{preflight.recentRefunds} refund(s) en las últimas 24h</li>
                 )}
                 {/* 🛡️ Round 28 MUD-AU: balance Stripe pendiente de settlement. Si cerramos
                     la cuenta con Pending > 0, el dinero revierte al platform y NO podemos
                     recuperarlo automáticamente. El experto debe esperar 2-7 días a que
                     Stripe libere los cobros recientes. */}
                 {preflight.pendingBalanceMajorUnits > 0 && (
-                  <li className="flex items-start gap-2">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 mt-1.5 flex-shrink-0"></span>
-                    <span>
-                      <strong>Pendiente de liquidar en Stripe:</strong>{' '}
-                      {preflight.pendingBalanceCurrencies
-                        ? preflight.pendingBalanceCurrencies
-                            .split(',')
-                            .map((part) => {
-                              const [cur, amt] = part.split(':');
-                              return `${amt} ${cur}`;
-                            })
-                            .join(' · ')
-                        : `${preflight.pendingBalanceMajorUnits.toFixed(2)}`}
-                      <br />
-                      <span className="text-xs text-gray-500">
-                        Espera 2-7 días al settlement antes de mudarte — si cierras ahora ese dinero se devuelve a la plataforma.
-                      </span>
+                  <li>
+                    <strong className="text-foreground">Pendiente de liquidar en Stripe:</strong>{' '}
+                    {preflight.pendingBalanceCurrencies
+                      ? preflight.pendingBalanceCurrencies
+                          .split(',')
+                          .map((part) => {
+                            const [cur, amt] = part.split(':');
+                            return `${amt} ${cur}`;
+                          })
+                          .join(' · ')
+                      : preflight.pendingBalanceMajorUnits.toFixed(2)}
+                    <br />
+                    <span className="text-xs">
+                      Espera 2-7 días al settlement antes de mudarte — si cierras ahora ese dinero se devuelve a la plataforma.
                     </span>
                   </li>
                 )}
               </ul>
-              <button
-                onClick={onClose}
-                className="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors"
-              >
+              <Button variant="outline" className="w-full" onClick={onClose}>
                 Entendido
-              </button>
+              </Button>
             </div>
           )}
 
           {step === 'intro' && preflight && (
             <div className="space-y-5">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <h3 className="font-semibold text-blue-900 flex items-center gap-2 mb-2">
-                  <Globe className="w-5 h-5" />
+              <div className="rounded-xl border border-border bg-muted/50 p-4">
+                <h3 className="mb-2 flex items-center gap-2 font-semibold text-foreground">
+                  <Globe className="h-5 w-5 text-brand" />
                   ¿Por qué necesitas este wizard?
                 </h3>
-                <p className="text-sm text-blue-800">
-                  Stripe Connect <strong>no permite cambiar el país</strong> de una cuenta de cobros una vez creada. Para
+                <p className="text-sm text-muted-foreground">
+                  Stripe Connect <strong className="text-foreground">no permite cambiar el país</strong> de una cuenta de cobros una vez creada. Para
                   operar desde un nuevo país, hay que cerrar la cuenta actual (
-                  <strong>{preflight.currentCountry || 'país actual'}</strong>) y abrir una nueva durante un onboarding fresco.
+                  <strong className="text-foreground">{preflight.currentCountry || 'país actual'}</strong>) y abrir una nueva durante un onboarding fresco.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-green-900 flex items-center gap-2 mb-2">
-                    <CheckCircle className="w-5 h-5" />
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <div className="rounded-xl border border-border p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-foreground">
+                    <CheckCircle className="h-5 w-5 text-muted-foreground" />
                     Se conserva
                   </h4>
-                  <ul className="text-sm text-green-800 space-y-1">
+                  <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>• Tu usuario y email</li>
                     <li>• Historial como cliente</li>
                     <li>• Reviews recibidas ({preflight.receivedReviewsCount})</li>
                     <li>• MFA, conversaciones, notificaciones</li>
                   </ul>
                 </div>
-                <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
-                  <h4 className="font-semibold text-orange-900 flex items-center gap-2 mb-2">
-                    <AlertTriangle className="w-5 h-5" />
+                <div className="rounded-xl border border-warning-border bg-warning-tint p-4">
+                  <h4 className="mb-2 flex items-center gap-2 font-semibold text-warning">
+                    <AlertTriangle className="h-5 w-5" />
                     Se desactiva
                   </h4>
-                  <ul className="text-sm text-orange-800 space-y-1">
+                  <ul className="space-y-1 text-sm text-muted-foreground">
                     <li>• Cuenta Stripe Connect actual</li>
                     <li>• Servicios activos ({preflight.activeServicesCount}) — pasan a inactivo</li>
                     <li>• Tu perfil sale de las búsquedas hasta el nuevo onboarding</li>
@@ -241,12 +222,12 @@ export const ExpertRelocationWizard: React.FC<ExpertRelocationWizardProps> = ({
                 </div>
               </div>
 
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-                <h4 className="font-semibold text-gray-900 flex items-center gap-2 mb-2">
-                  <Shield className="w-5 h-5" />
+              <div>
+                <h4 className="mb-2 flex items-center gap-2 text-sm font-semibold text-foreground">
+                  <Shield className="h-4 w-4" />
                   Lo que pasará después
                 </h4>
-                <ol className="text-sm text-gray-700 space-y-1 list-decimal pl-5">
+                <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
                   <li>Cerramos tu cuenta Stripe Connect (intentamos delete; si tiene saldo, reject).</li>
                   <li>Marcamos tu perfil como "mudado" — las reviews antiguas mostrarán un badge con el país previo.</li>
                   <li>Te llevamos a la página de "Convertirse en experto" para que selecciones tu nuevo país y vuelvas a hacer onboarding (incluye verificación de identidad).</li>
@@ -255,120 +236,105 @@ export const ExpertRelocationWizard: React.FC<ExpertRelocationWizardProps> = ({
               </div>
 
               <div className="flex gap-2">
-                <button
-                  onClick={onClose}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors"
-                >
+                <Button variant="outline" className="flex-1" onClick={onClose}>
                   Cancelar
-                </button>
-                <button
-                  onClick={() => setStep('confirm')}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-                >
+                </Button>
+                <SileoButton className="flex-1" onClick={() => setStep('confirm')}>
                   Continuar
-                  <ArrowRight className="w-4 h-4" />
-                </button>
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </SileoButton>
               </div>
             </div>
           )}
 
           {step === 'confirm' && (
             <div className="space-y-4">
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <AlertTriangle className="w-6 h-6 text-red-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-red-900">Confirmación final</h3>
-                    <p className="text-sm text-red-800 mt-1">
-                      Esto cerrará tu cuenta de cobros actual. La acción es <strong>irreversible</strong>: Stripe no permite
-                      recuperar la cuenta cerrada — solo puedes abrir una nueva.
-                    </p>
-                  </div>
+              <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 p-4">
+                <AlertTriangle className="mt-0.5 h-5 w-5 flex-shrink-0 text-destructive" />
+                <div>
+                  <h3 className="font-semibold text-foreground">Confirmación final</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Esto cerrará tu cuenta de cobros actual. La acción es <strong className="text-foreground">irreversible</strong>: Stripe no permite
+                    recuperar la cuenta cerrada — solo puedes abrir una nueva.
+                  </p>
                 </div>
               </div>
 
               <label className="block">
-                <span className="text-sm font-medium text-gray-700">Motivo (opcional)</span>
+                <span className="text-sm font-medium text-foreground">Motivo (opcional)</span>
                 <textarea
                   value={reason}
                   onChange={(e) => setReason(e.target.value)}
                   placeholder="Ej: Me mudo a España permanentemente"
                   rows={2}
-                  className="mt-1 w-full border border-gray-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="mt-1 w-full rounded-xl border border-input bg-background p-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 />
               </label>
 
               <label className="block">
-                <span className="text-sm font-medium text-gray-700">
-                  Escribe <code className="bg-gray-100 px-1 rounded">MUDARME</code> para confirmar
+                <span className="text-sm font-medium text-foreground">
+                  Escribe <code className="rounded bg-muted px-1">MUDARME</code> para confirmar
                 </span>
                 <input
                   type="text"
                   value={confirmation}
                   onChange={(e) => setConfirmation(e.target.value)}
                   placeholder="MUDARME"
-                  className="mt-1 w-full border border-gray-300 rounded-lg p-2 text-sm font-mono focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  className="mt-1 w-full rounded-xl border border-input bg-background p-2 font-mono text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   autoComplete="off"
                 />
               </label>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800">
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
                   {error}
                 </div>
               )}
 
               <div className="flex gap-2">
-                <button
-                  onClick={() => setStep('intro')}
-                  className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded-lg font-medium transition-colors"
-                  disabled={loading}
-                >
+                <Button variant="outline" className="flex-1" onClick={() => setStep('intro')} disabled={loading}>
                   Atrás
-                </button>
-                <button
+                </Button>
+                <SileoButton
+                  variant="destructive"
+                  className="flex-1"
                   onClick={handleExecute}
-                  disabled={confirmation.trim().toUpperCase() !== 'MUDARME' || loading}
-                  className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-red-300 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                  disabled={confirmation.trim().toUpperCase() !== 'MUDARME'}
+                  loading={loading}
+                  loadingText="Cerrando…"
                 >
                   Cerrar mi cuenta Stripe
-                </button>
+                </SileoButton>
               </div>
             </div>
           )}
 
           {step === 'processing' && (
-            <div className="flex flex-col items-center justify-center py-12 gap-3">
-              <Loader2 className="w-10 h-10 text-red-500 animate-spin" />
-              <p className="text-gray-700 font-medium">Cerrando tu cuenta Stripe…</p>
-              <p className="text-sm text-gray-500">Esto puede tardar unos segundos. No cierres esta ventana.</p>
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <Loader2 className="h-10 w-10 animate-spin text-brand" />
+              <p className="font-medium text-foreground">Cerrando tu cuenta Stripe…</p>
+              <p className="text-sm text-muted-foreground">Esto puede tardar unos segundos. No cierres esta ventana.</p>
             </div>
           )}
 
           {step === 'result' && result && (
             <div className="space-y-4">
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-green-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <h3 className="font-semibold text-green-900">Cuenta cerrada</h3>
-                    <p className="text-sm text-green-800 mt-1">{result.message}</p>
-                  </div>
+              <div className="flex items-start gap-3 rounded-xl border border-success-border bg-success-tint p-4">
+                <CheckCircle className="mt-0.5 h-5 w-5 flex-shrink-0 text-success" />
+                <div>
+                  <h3 className="font-semibold text-foreground">Cuenta cerrada</h3>
+                  <p className="mt-1 text-sm text-muted-foreground">{result.message}</p>
                 </div>
               </div>
-              <button
-                onClick={goToReonboarding}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
-              >
+              <SileoButton className="w-full" onClick={goToReonboarding}>
                 Ir a "Convertirse en experto"
-                <ArrowRight className="w-4 h-4" />
-              </button>
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </SileoButton>
             </div>
           )}
         </div>
-      </div>
-    </div>,
-    document.body
+      </DialogContent>
+    </Dialog>
   );
 };
 

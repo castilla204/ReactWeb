@@ -3,6 +3,8 @@ import { Loader2, Plus, Trash2, Save, CalendarClock, Copy, Info, ChevronDown } f
 import { API_CONFIG } from '../../config/api';
 import { getAuthToken } from '../../lib/auth';
 import { cn } from '../../lib/utils';
+import { Button } from '../ui/button';
+import { SileoSkeleton } from '../ui/sileo-skeleton';
 
 interface Range { start: string; end: string; }
 interface DayState { enabled: boolean; ranges: Range[]; }
@@ -93,6 +95,9 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
     // Firma del último horario guardado (o vacío si aún no hay reglas en el servidor),
     // para encender el botón "Guardar horario" solo cuando hay cambios pendientes.
     const baselineRef = useRef<string>('');
+    // Solo protege la PRIMERA carga: si un refetch posterior falla, el horario ya
+    // mostrado sigue siendo válido y no hay que bloquear el formulario por ello.
+    const hasLoadedOnce = useRef(false);
 
     const authHeaders = (): Record<string, string> => {
         const t = getAuthToken();
@@ -153,6 +158,7 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
             // Si no (prefijado desde legacy o por defecto), dejamos baseline "vacío" para
             // que el botón aparezca encendido y el experto pueda activar su horario.
             baselineRef.current = hasRules ? serializeWeek(next) : serializeWeek(emptyWeek());
+            hasLoadedOnce.current = true;
         } catch {
             setError('No se pudo cargar tu horario.');
         } finally {
@@ -324,7 +330,7 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
                     <span className="av-schedule__toggle-summary">{summary}</span>
                     <ChevronDown className={cn('av-schedule__toggle-chevron', open && 'av-schedule__toggle-chevron--open')} />
                 </button>
-            ) : (
+            ) : !embedded ? (
                 <header className="av-schedule__header">
                     <span className="av-schedule__header-icon" aria-hidden>
                         <CalendarClock className="h-[18px] w-[18px]" />
@@ -336,7 +342,7 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
                         </p>
                     </div>
                 </header>
-            )}
+            ) : null}
 
             {open && (
             <div className={collapsible ? 'av-schedule__body av-schedule__body--collapsible' : 'av-schedule__body'}>
@@ -346,12 +352,35 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
                     <span>Hemos cargado tu horario actual. Revísalo y <strong>guárdalo</strong> para activarlo en las reservas.</span>
                 </p>
             )}
-            {error && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-error-border))] bg-[hsl(var(--ep-error-bg))] px-3 py-2 text-meta font-medium text-[hsl(var(--ep-error))]">{error}</p>}
+            {error && hasLoadedOnce.current && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-error-border))] bg-[hsl(var(--ep-error-bg))] px-3 py-2 text-meta font-medium text-[hsl(var(--ep-error))]">{error}</p>}
             {!embedded && success && <p className="mb-3 rounded-lg border border-[hsl(var(--ep-success-border))] bg-[hsl(var(--ep-success-bg))] px-3 py-2 text-meta font-medium text-[hsl(var(--ep-success))]">{success}</p>}
 
             {loading ? (
-                <div className="flex items-center justify-center gap-2 py-10 text-meta text-ink-muted">
-                    <Loader2 className="h-4 w-4 animate-spin text-brand" /> Cargando horario…
+                <div className="av-schedule__days" aria-busy="true" aria-label="Cargando horario">
+                    {Array.from({ length: 7 }).map((_, i) => (
+                        <div key={i} className="av-schedule__day av-schedule__day--compact">
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                                <div className="flex shrink-0 items-center gap-2.5">
+                                    <SileoSkeleton className="h-5 w-9" rounded="full" shimmerDelayMs={i * 70} />
+                                    <SileoSkeleton className="h-4 w-16" rounded="sm" shimmerDelayMs={i * 70} />
+                                </div>
+                                <div className="ml-auto flex items-center gap-1.5">
+                                    <SileoSkeleton className="h-7 w-16" rounded="lg" shimmerDelayMs={i * 70} />
+                                    <SileoSkeleton className="h-7 w-16" rounded="lg" shimmerDelayMs={i * 70} />
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            ) : error && !hasLoadedOnce.current ? (
+                <div className="ep-empty-state">
+                    <p className="ep-empty-state-title">No se pudo cargar tu horario</p>
+                    <p className="ep-empty-state-text">
+                        Puede ser un problema de conexión. Tu horario real no ha cambiado — reinténtalo antes de guardar nada.
+                    </p>
+                    <Button type="button" onClick={() => load()} className="expert-btn-brand mt-4">
+                        Reintentar
+                    </Button>
                 </div>
             ) : (
                 <>
@@ -417,14 +446,14 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
                                                 ))}
                                                 <div className="ml-auto flex items-center gap-0.5">
                                                     <button type="button" onClick={() => addRange(d.id)}
-                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-caption font-medium text-brand transition-colors hover:bg-brand/[0.08]"
+                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-caption font-medium text-brand transition-colors hover:bg-brand/[0.08]"
                                                         title="Añadir turno partido">
-                                                        <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Franja</span>
+                                                        <Plus className="h-3.5 w-3.5" /> Franja
                                                     </button>
                                                     <button type="button" onClick={() => copyToAll(d.id)}
-                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1 text-caption font-medium text-ink-muted transition-colors hover:bg-surface-tinted hover:text-brand"
+                                                        className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-caption font-medium text-ink-muted transition-colors hover:bg-surface-tinted hover:text-brand"
                                                         title="Copiar este horario a todos los días">
-                                                        <Copy className="h-3.5 w-3.5" /> <span className="hidden md:inline">Copiar a todos</span>
+                                                        <Copy className="h-3.5 w-3.5" /> Copiar a todos
                                                     </button>
                                                 </div>
                                             </div>
@@ -446,14 +475,11 @@ const AvailabilityRulesEditor = forwardRef<AvailabilityHandle, Props>(function A
                     {!embedded && (
                     <div className="mt-4 flex items-center justify-end gap-3">
                         <span className="hidden text-caption text-ink-soft sm:inline">Recuerda guardar para que tenga efecto</span>
-                        <button type="button" onClick={save} disabled={saving || !isDirty}
-                            className={cn(
-                                'inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2 text-meta font-semibold text-white transition-all hover:bg-brand-hover disabled:cursor-not-allowed disabled:opacity-50 disabled:saturate-[0.6] disabled:shadow-none',
-                                isDirty && !saving ? 'shadow-[0_3px_12px_hsl(var(--brand)/0.5)]' : 'shadow-none',
-                            )}>
+                        <Button type="button" onClick={save} disabled={saving || !isDirty}
+                            className="expert-btn-brand inline-flex items-center gap-2">
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                             {saving ? 'Guardando…' : 'Guardar horario'}
-                        </button>
+                        </Button>
                     </div>
                     )}
                 </>

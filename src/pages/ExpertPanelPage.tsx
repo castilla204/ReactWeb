@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { ArrowLeft, CheckCircle, User, Plane, PlaneTakeoff, Package, Menu, X, MessageCircle, Bell, Settings2, ExternalLink, CalendarClock } from 'lucide-react';
+import { ArrowLeft, CheckCircle, User, Plane, PlaneTakeoff, Package, Menu, X, MessageCircle, Bell, Settings2, ExternalLink, CalendarClock, Home } from 'lucide-react';
+import ExpertHubTab from '../components/expertPanel/ExpertHubTab';
 import { ExpertPanelSkeleton } from '../components/ui/expert-panel-skeleton';
 import '../styles/expert-panel.css';
 /* Cargar con el shell del panel — si va en el chunk lazy del form, el CSS llega ~1s tarde y “tapaba” el diseño nuevo */
@@ -62,6 +63,7 @@ import { ExpertMessagesInbox } from '../components/expertPanel/ExpertMessagesInb
 import AvailabilityTab from '../components/expertPanel/AvailabilityTab';
 import { ServiceForm } from '../components/expertPanel/ServiceForm';
 import { ProfileEditForm } from '../components/expertPanel/ProfileEditForm';
+import { useExpertVisibility } from '../hooks/useExpertVisibility';
 import { emptyConfig, resolveTemplate, type InspectionConfig } from '../lib/inspectionTemplateConfig';
 import { buildTemplatePdf } from '../lib/inspectionPdf';
 import { getInspectionCatalog } from '../lib/inspectionCatalog';
@@ -114,9 +116,9 @@ export function ExpertPanelPage() {
     // las contrataciones ya viven ahí como conversaciones. Redirigimos enlaces antiguos.
     const rawTabFromUrl = searchParams.get('tab');
     const tabFromUrl = rawTabFromUrl === 'hires' ? 'messages' : rawTabFromUrl;
-    type ExpertTab = 'setup' | 'profile' | 'disponibilidad' | 'services' | 'messages';
-    const validTabs: ExpertTab[] = ['setup', 'profile', 'disponibilidad', 'services', 'messages'];
-    const initialTab: ExpertTab = validTabs.includes(tabFromUrl as ExpertTab) ? tabFromUrl as ExpertTab : 'services';
+    type ExpertTab = 'inicio' | 'setup' | 'profile' | 'disponibilidad' | 'services' | 'messages';
+    const validTabs: ExpertTab[] = ['inicio', 'setup', 'profile', 'disponibilidad', 'services', 'messages'];
+    const initialTab: ExpertTab = validTabs.includes(tabFromUrl as ExpertTab) ? tabFromUrl as ExpertTab : 'inicio';
     const [activeTab, setActiveTab] = useState<ExpertTab>(initialTab);
 
     useEffect(() => {
@@ -134,6 +136,14 @@ export function ExpertPanelPage() {
         setActiveTab(value);
         setSearchParams({ tab: value });
         setSidebarOpen(false);
+    };
+    // Sección del perfil a la que aterrizar al venir de un CTA del wizard de
+    // Configuración ("Subir foto", "Elegir ubicación"...) — antes los 3 CTAs de
+    // foto/descripción/ubicación hacían el mismo cambio de pestaña genérico.
+    const [focusProfileSection, setFocusProfileSection] = useState<'photo' | 'description' | 'location' | null>(null);
+    const handleEditProfileSection = (section?: 'photo' | 'description' | 'location') => {
+        setFocusProfileSection(section ?? null);
+        handleTabChange('profile');
     };
     const [sidebarOpen, setSidebarOpen] = useState(false);
     const [showServiceForm, setShowServiceForm] = useState(false);
@@ -185,11 +195,11 @@ export function ExpertPanelPage() {
     } = useExpert();
 
     // ✅ Optimización: Solo cargar servicios cuando el profile esté disponible y cargado
-    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, updateService, isUpdatingService, deleteService, isDeletingService } = useServices({
+    const { services, isLoading: isLoadingServices, error: servicesError, createService, isCreatingService, updateService, isUpdatingService, deleteService, isDeletingService, reactivateService, isReactivatingService } = useServices({
         expertProfileId: profile?.id
     });
 
-    // 📱 Estado del móvil verificado — misma query que PhoneStatusCard/ProfileCompletionCard
+    // 📱 Estado del móvil verificado — misma query que ProfileSetupWizard
     // (react-query la deduplica). El banner de visibilidad lo necesita porque el backend
     // OCULTA los servicios sin móvil verificado: banner y checklist deben contar lo mismo.
     const phoneStatusQuery = usePhoneStatus(Boolean(profile));
@@ -215,6 +225,11 @@ export function ExpertPanelPage() {
         stripeAccountId: (stripeStatus as { stripeAccountId?: string })?.stripeAccountId ?? profile?.stripeAccountId,
     };
     const { steps: profileSetupSteps, complete: profileSetupComplete, pendingRequired } = useProfileSetupState(profile, smsCapable, stripeContext);
+    // 🛡️ Mismo veredicto del backend que usa la pestaña Configuración — evita que
+    // "Mi perfil" diga "Perfil activo" (checklist completo) mientras Configuración
+    // dice "Perfil oculto" (Stripe en revisión, vacaciones…) para el mismo experto.
+    const expertVisibilityQuery = useExpertVisibility();
+    const profileVisible = expertVisibilityQuery.data ? expertVisibilityQuery.data.isVisible : profileSetupComplete;
 
     useEffect(() => {
         if (activeTab === 'profile') {
@@ -236,8 +251,10 @@ export function ExpertPanelPage() {
 
     useEffect(() => {
         if (profileSetupComplete && activeTab === 'setup') {
-            setActiveTab('services');
-            setSearchParams({ tab: 'services' }, { replace: true });
+            // Tras completar el setup, el destino por defecto es el hub "Inicio"
+            // (bandeja de trabajo), no la lista de servicios.
+            setActiveTab('inicio');
+            setSearchParams({ tab: 'inicio' }, { replace: true });
         }
     }, [profileSetupComplete, activeTab, setSearchParams]);
 
@@ -266,6 +283,20 @@ export function ExpertPanelPage() {
         window.addEventListener('openExpertRelocationWizard', handler);
         return () => window.removeEventListener('openExpertRelocationWizard', handler);
     }, []);
+
+    // AccountSettingsModal es global (se abre desde cualquier página) y no puede montar
+    // el wizard directamente, así que navega aquí con ?relocate=1 en vez de dispatchar
+    // el evento de arriba (que solo funciona si este panel ya está montado).
+    useEffect(() => {
+        if (searchParams.get('relocate') === '1') {
+            setShowRelocationWizard(true);
+            setSearchParams((prev) => {
+                const next = new URLSearchParams(prev);
+                next.delete('relocate');
+                return next;
+            }, { replace: true });
+        }
+    }, [searchParams]);
     
     // Estado para el diálogo de servicio duplicado
     const [duplicateServiceDialog, setDuplicateServiceDialog] = useState<{
@@ -439,9 +470,14 @@ export function ExpertPanelPage() {
             }
         }
 
-        // Validar durationInHours (opcional)
+        // Validar durationInHours: requerida solo si el tipo de servicio implica cita
+        // (mismo criterio que ServiceForm.showDuration — si no, el campo ni se muestra).
+        const selectedType = serviceTypes?.find((t) => t.id === parseInt(String(formData.serviceTypeId), 10));
+        const durationRequired = selectedType?.requiresAppointment === true;
         const durationStr = formData.durationInHours;
-        if (durationStr && String(durationStr).trim() !== '') {
+        if (durationRequired && (!durationStr || String(durationStr).trim() === '')) {
+            errors.durationInHours = 'La duración es requerida para este tipo de servicio';
+        } else if (durationStr && String(durationStr).trim() !== '') {
             const duration = parseInt(String(durationStr));
             if (isNaN(duration) || duration <= 0) {
                 errors.durationInHours = 'La duración debe ser mayor que 0';
@@ -842,9 +878,11 @@ export function ExpertPanelPage() {
             let errorMessage = 'Error al actualizar el servicio';
             try {
                 if (error && typeof error === 'object') {
-                    errorMessage = error.message || error.error || JSON.stringify(error);
-                } else if (error != null) {
-                    errorMessage = String(error);
+                    // Solo mensajes de texto legibles (el backend habla español aquí). Nunca
+                    // volcamos JSON.stringify(error) crudo a un experto no técnico.
+                    if (typeof error.message === 'string' && error.message.trim()) {
+                        errorMessage = error.message;
+                    }
                 }
             } catch (e) {
                 // Si falla al convertir el error, usar el mensaje por defecto
@@ -982,9 +1020,11 @@ export function ExpertPanelPage() {
                 let errorMessage = 'Error al crear el servicio';
                 try {
                     if (error && typeof error === 'object') {
-                        errorMessage = error.message || error.error || JSON.stringify(error);
-                    } else if (error != null) {
-                        errorMessage = String(error);
+                        // Solo mensajes de texto legibles (el backend habla español aquí). Nunca
+                        // volcamos JSON.stringify(error) crudo a un experto no técnico.
+                        if (typeof error.message === 'string' && error.message.trim()) {
+                            errorMessage = error.message;
+                        }
                     }
                 } catch (e) {
                     // Si falla al convertir el error, usar el mensaje por defecto
@@ -1298,7 +1338,10 @@ export function ExpertPanelPage() {
     };
 
     const unreadHires = hires.reduce((total, hire) => total + (hire.unreadMessagesCount || 0), 0);
+    // Encargos que esperan la acción del experto (alimentan el hub "Inicio" y su badge).
+    const pendingActionCount = hires.filter((hire) => hire.status === 'pending').length;
     const tabTitles: Record<ExpertTab, string> = {
+        inicio: 'Inicio',
         setup: 'Configuración',
         profile: 'Mi perfil',
         disponibilidad: 'Disponibilidad',
@@ -1356,7 +1399,7 @@ export function ExpertPanelPage() {
                         <p className="expert-sidebar-name">{user?.name}</p>
                         <p className="expert-sidebar-role">Experto</p>
                     </div>
-                    <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setSidebarOpen(false)}>
+                    <Button variant="ghost" size="icon" className="lg:hidden h-8 w-8 shrink-0" onClick={() => setSidebarOpen(false)} aria-label="Cerrar menú">
                         <X className="w-4 h-4" />
                     </Button>
                 </div>
@@ -1404,6 +1447,15 @@ export function ExpertPanelPage() {
                     <p className="expert-nav-section-label">Panel</p>
                     <button
                         type="button"
+                        className={`expert-nav-item ${activeTab === 'inicio' ? 'expert-nav-item--active' : ''}`}
+                        onClick={() => handleTabChange('inicio')}
+                    >
+                        <Home />
+                        Inicio
+                        {pendingActionCount > 0 && <span className="expert-nav-badge">{pendingActionCount > 9 ? '9+' : pendingActionCount}</span>}
+                    </button>
+                    <button
+                        type="button"
                         className={`expert-nav-item ${activeTab === 'profile' ? 'expert-nav-item--active' : ''}`}
                         onClick={() => handleTabChange('profile')}
                     >
@@ -1446,6 +1498,7 @@ export function ExpertPanelPage() {
                     <button type="button" className="expert-nav-item" onClick={() => setShowVacationModal(true)}>
                         {profile?.isOnVacation ? <PlaneTakeoff /> : <Plane />}
                         {profile?.isOnVacation ? 'Activar cuenta' : 'Modo vacaciones'}
+                        {profile?.isOnVacation && <span className="expert-nav-badge">Activo</span>}
                     </button>
                     {profile?.country && (
                         <div className="expert-sidebar-meta">
@@ -1462,7 +1515,7 @@ export function ExpertPanelPage() {
 
             <div className="expert-main">
                 <header className="expert-topbar">
-                    <Button variant="ghost" size="icon" className="lg:hidden expert-topbar-menu" onClick={() => setSidebarOpen(true)}>
+                    <Button variant="ghost" size="icon" className="lg:hidden expert-topbar-menu" onClick={() => setSidebarOpen(true)} aria-label="Abrir menú">
                         <Menu className="w-5 h-5" />
                     </Button>
                     <div className="expert-topbar-heading">
@@ -1495,10 +1548,23 @@ export function ExpertPanelPage() {
                 </header>
 
                 <main className={`expert-workspace${activeTab === 'setup' ? ' expert-workspace--setup' : ''}${activeTab === 'profile' ? ' expert-workspace--profile' : ''}${activeTab === 'services' && !showServiceForm ? ' expert-workspace--services' : ''}${showServiceForm && activeTab === 'services' ? ' expert-workspace--service-editor' : ''}${activeTab === 'disponibilidad' ? ' expert-workspace--availability' : ''}${activeTab === 'messages' ? ' expert-workspace--messages' : ''}`}>
-                    {activeTab === 'setup' && profile ? (
+                    {activeTab === 'inicio' ? (
+                        <ExpertHubTab
+                            expertName={user?.name}
+                            hires={hires}
+                            servicesCount={services.length}
+                            isVisible={profileVisible}
+                            isOnVacation={profile?.isOnVacation}
+                            unreadHires={unreadHires}
+                            onGoServices={() => handleTabChange('services')}
+                            onGoAvailability={() => handleTabChange('disponibilidad')}
+                            onGoMessages={() => handleTabChange('messages')}
+                            onGoSetup={() => handleTabChange('setup')}
+                        />
+                    ) : activeTab === 'setup' && profile ? (
                         <ProfileSetupWizard
                             profile={profile}
-                            onEditProfile={() => handleTabChange('profile')}
+                            onEditProfile={handleEditProfileSection}
                             onEditAvailability={() => handleTabChange('disponibilidad')}
                             onOpenStripe={openStripeDashboard}
                             visibilityNote={visibilityNote}
@@ -1529,11 +1595,13 @@ export function ExpertPanelPage() {
                                 embedded
                                 profile={profile as any}
                                 onProfileUpdated={() => fetchProfile(true, { silent: true })}
+                                focusSection={focusProfileSection}
                                 profileSetup={{
                                     steps: profileSetupSteps,
                                     complete: profileSetupComplete,
+                                    visible: profileVisible,
                                     pendingRequired,
-                                    onOpenSetup: !profileSetupComplete ? () => handleTabChange('setup') : undefined,
+                                    onOpenSetup: !profileVisible ? () => handleTabChange('setup') : undefined,
                                 }}
                             />
                         </>
@@ -1589,6 +1657,8 @@ export function ExpertPanelPage() {
                             categories={categories}
                             deleteService={deleteService}
                             isDeletingService={isDeletingService}
+                            reactivateService={reactivateService}
+                            isReactivatingService={isReactivatingService}
                             onEditService={handleEditService}
                             stripeStatus={stripeStatus?.stripeStatus}
                             onboardingCompleted={(stripeStatus as { onboardingCompleted?: boolean }).onboardingCompleted ?? profile?.onboardingCompleted}
@@ -1598,6 +1668,7 @@ export function ExpertPanelPage() {
                                 && (profile as { longitude?: string | number })?.longitude != null && (profile as { longitude?: string | number })?.longitude !== '',
                             )}
                             profileIncomplete={!profileSetupComplete}
+                            pendingRequired={pendingRequired}
                             onGoToSetup={() => handleTabChange('setup')}
                         />
                     ) : (
@@ -1606,7 +1677,9 @@ export function ExpertPanelPage() {
                                 {/* 🛡️ C1 + unificación: banner ÚNICO de visibilidad (consecuencia comercial +
                                     acción + plazo Stripe). Sustituye al StripeStatusBanner, que era redundante
                                     (mostrar ambos confundía). El desglose de requisitos vive en la pestaña Perfil
-                                    (StripeStatusCard, M2). Visible en todas las pestañas del panel, incl. services. */}
+                                    (StripeStatusCard, M2). Excluido en disponibilidad/messages/services: esas
+                                    pestañas ya muestran su propio aviso de "requisitos pendientes" en contexto
+                                    (pf-profile-pending-banner en ServicesTab/ProfileEditForm). */}
                                 {profile && stripeStatus?.stripeStatus && activeTab !== 'disponibilidad' && activeTab !== 'messages' && activeTab !== 'services' && (
                                     <div className="px-5 pt-4">
                                         <ExpertVisibilityBanner
@@ -1667,12 +1740,12 @@ export function ExpertPanelPage() {
                         <DrawerHeader className="px-4 sm:px-6 pt-4 sm:pt-6 pb-3 sm:pb-4 border-b border-border flex-shrink-0">
                             <div className="flex items-center gap-3">
                                 {profile?.isOnVacation ? (
-                                    <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center">
-                                        <PlaneTakeoff className="w-5 h-5 text-orange-600" />
+                                    <div className="w-10 h-10 bg-brand/10 rounded-full flex items-center justify-center">
+                                        <PlaneTakeoff className="w-5 h-5 text-brand" />
                                     </div>
                                 ) : (
-                                    <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                        <Plane className="w-5 h-5 text-blue-600" />
+                                    <div className="w-10 h-10 bg-muted rounded-full flex items-center justify-center">
+                                        <Plane className="w-5 h-5 text-foreground" />
                                     </div>
                                 )}
                                 <div className="flex-1">
@@ -1702,27 +1775,27 @@ export function ExpertPanelPage() {
                                                 Al activar tu cuenta, volverás a aparecer en las búsquedas de clientes y podrás recibir nuevas contrataciones.
                                             </p>
                                         </div>
-                                        <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-4">
-                                            <div className="flex items-start gap-3">
-                                                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
-                                                <div>
-                                                    <p className="text-sm font-medium text-green-900 dark:text-green-100">Volverás a ser visible</p>
-                                                    <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                                                        Los clientes podrán encontrarte nuevamente en sus búsquedas
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-md p-4">
-                                            <div className="flex items-start gap-3">
-                                                <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400 mt-0.5" />
-                                                <div>
-                                                    <p className="text-sm font-medium text-green-900 dark:text-green-100">Podrás recibir contrataciones</p>
-                                                    <p className="text-xs text-green-700 dark:text-green-300 mt-1">
-                                                        Estarás disponible para nuevos servicios inmediatamente
-                                                    </p>
-                                                </div>
-                                            </div>
+                                        <div className="rounded-xl border border-border bg-muted/50 p-4">
+                                            <ul className="space-y-3">
+                                                <li className="flex items-start gap-3">
+                                                    <CheckCircle className="w-5 h-5 text-foreground mt-0.5 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="text-sm font-medium text-foreground">Volverás a ser visible</p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            Los clientes podrán encontrarte nuevamente en sus búsquedas
+                                                        </p>
+                                                    </div>
+                                                </li>
+                                                <li className="flex items-start gap-3">
+                                                    <CheckCircle className="w-5 h-5 text-foreground mt-0.5 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="text-sm font-medium text-foreground">Podrás recibir contrataciones</p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            Estarás disponible para nuevos servicios inmediatamente
+                                                        </p>
+                                                    </div>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </>
                                 ) : (
@@ -1733,27 +1806,27 @@ export function ExpertPanelPage() {
                                                 Al activar el modo vacaciones, tu perfil no aparecerá en las búsquedas de clientes y no recibirás nuevas contrataciones.
                                             </p>
                                         </div>
-                                        <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-md p-4">
-                                            <div className="flex items-start gap-3">
-                                                <Plane className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
-                                                <div>
-                                                    <p className="text-sm font-medium text-orange-900 dark:text-orange-100">No aparecerás en búsquedas</p>
-                                                    <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-                                                        Los clientes no podrán encontrarte temporalmente
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div className="bg-orange-50 dark:bg-orange-950 border border-orange-200 dark:border-orange-800 rounded-md p-4">
-                                            <div className="flex items-start gap-3">
-                                                <Plane className="w-5 h-5 text-orange-600 dark:text-orange-400 mt-0.5" />
-                                                <div>
-                                                    <p className="text-sm font-medium text-orange-900 dark:text-orange-100">Pausar nuevas contrataciones</p>
-                                                    <p className="text-xs text-orange-700 dark:text-orange-300 mt-1">
-                                                        Las contrataciones existentes permanecerán activas
-                                                    </p>
-                                                </div>
-                                            </div>
+                                        <div className="rounded-xl border border-border bg-muted/50 p-4">
+                                            <ul className="space-y-3">
+                                                <li className="flex items-start gap-3">
+                                                    <Plane className="w-5 h-5 text-foreground mt-0.5 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="text-sm font-medium text-foreground">No aparecerás en búsquedas</p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            Los clientes no podrán encontrarte temporalmente
+                                                        </p>
+                                                    </div>
+                                                </li>
+                                                <li className="flex items-start gap-3">
+                                                    <Plane className="w-5 h-5 text-foreground mt-0.5 flex-shrink-0" />
+                                                    <div>
+                                                        <p className="text-sm font-medium text-foreground">Pausar nuevas contrataciones</p>
+                                                        <p className="text-xs text-muted-foreground mt-0.5">
+                                                            Las contrataciones existentes permanecerán activas
+                                                        </p>
+                                                    </div>
+                                                </li>
+                                            </ul>
                                         </div>
                                     </>
                                 )}
@@ -1776,8 +1849,8 @@ export function ExpertPanelPage() {
                                     loading={isToggling}
                                     loadingText="Procesando…"
                                     className={profile?.isOnVacation
-                                        ? 'bg-green-600 hover:bg-green-700'
-                                        : 'bg-orange-600 hover:bg-orange-700'
+                                        ? undefined
+                                        : 'bg-foreground text-background hover:bg-foreground/90'
                                     }
                                 >
                                     {profile?.isOnVacation ? 'Activar cuenta' : 'Activar vacaciones'}

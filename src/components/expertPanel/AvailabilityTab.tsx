@@ -6,9 +6,10 @@ import AvailabilityRulesEditor, { type AvailabilityHandle } from './Availability
 /**
  * Pestaña "Disponibilidad" del panel del experto.
  *
- * Coordina DOS capas con UN solo guardado:
- *  · Paso 1 — Horario semanal (fuente de verdad de las reservas; AvailabilityRulesEditor).
- *  · Paso 2 — Ajustes por día concreto (excepciones; AvailabilityCalendar), opcional.
+ * Coordina DOS capas con UN solo guardado (no es un wizard: ambas están siempre
+ * visibles y son independientes, "Paso 1/2" inducía a pensar en una secuencia):
+ *  · Tu horario semanal — fuente de verdad de las reservas (AvailabilityRulesEditor).
+ *  · Excepciones por fecha — overrides puntuales sobre ese horario (AvailabilityCalendar), opcional.
  * Cada hijo expone un handle (isDirty/save/discard/reload); aquí se monta una única
  * barra de guardado que persiste ambos a la vez (reglas primero, luego excepciones).
  */
@@ -73,15 +74,18 @@ const AvailabilityTab: React.FC = () => {
                 </p>
             </header>
 
-            {/* Paso 1 — Horario semanal (siempre visible, fuente de verdad). */}
+            {/* Horario semanal (siempre visible, fuente de verdad). */}
             <section className="av-step">
-                <p className="av-step__tag">Paso 1 · Tu horario semanal</p>
+                <p className="av-step__tag">Tu horario semanal</p>
+                <p className="av-step__hint">
+                    Se repite cada semana y define cuándo tus clientes pueden reservar.
+                </p>
                 <AvailabilityRulesEditor embedded ref={rulesRef} onDirtyChange={onRulesDirty} />
             </section>
 
-            {/* Paso 2 — Excepciones por fecha (opcional). El calendario queda igual que antes. */}
+            {/* Excepciones por fecha (opcional): overrides puntuales sobre el horario semanal. */}
             <section className="av-step">
-                <p className="av-step__tag">Paso 2 · Ajustes por día concreto <span className="av-step__tag-opt">(opcional)</span></p>
+                <p className="av-step__tag">Excepciones por fecha <span className="av-step__tag-opt">(opcional)</span></p>
                 <p className="av-step__hint">
                     Cierra un día, abre uno suelto o cambia solo sus horas, sin tocar tu horario semanal.
                 </p>
