@@ -57,7 +57,7 @@ interface ExpertVisibilityBannerProps {
  *
  * ⚠️ COORDINACIÓN: los pasos 1-8 replican EXACTAMENTE el Where de visibilidad de
  * SearchServiceService.cs (y GET /api/User/expert-visibility). Si el backend añade
- * o quita un requisito, este banner y ProfileCompletionCard deben actualizarse.
+ * o quita un requisito, este banner y ProfileSetupWizard deben actualizarse.
  */
 export const ExpertVisibilityBanner: React.FC<ExpertVisibilityBannerProps> = ({
     stripeStatus,

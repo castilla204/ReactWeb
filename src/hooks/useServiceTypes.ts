@@ -8,6 +8,7 @@ interface ServiceType {
     serviceTypeCategoryId: number | null;
     serviceTypeCategoryName: string | null;
     position: number;
+    requiresAppointment: boolean;
 }
 
 interface ServiceTypesResponse {
@@ -149,21 +150,23 @@ export function useServiceTypes() {
                 setError(err instanceof Error ? err.message : 'An error occurred');
                 // Fallback data in case of error
                 setServiceTypes([
-                    { 
-                        id: 1, 
-                        name: 'Solo revisión', 
-                        description: 'Revisión presencial de un anuncio específico', 
+                    {
+                        id: 1,
+                        name: 'Solo revisión',
+                        description: 'Revisión presencial de un anuncio específico',
                         serviceTypeCategoryId: 1,
                         serviceTypeCategoryName: 'Revisión',
-                        position: 1 
+                        position: 1,
+                        requiresAppointment: true
                     },
-                    { 
-                        id: 2, 
-                        name: 'Búsqueda web + revisión', 
-                        description: 'Búsqueda automatizada más revisión manual experta', 
+                    {
+                        id: 2,
+                        name: 'Búsqueda web + revisión',
+                        description: 'Búsqueda automatizada más revisión manual experta',
                         serviceTypeCategoryId: 2,
                         serviceTypeCategoryName: 'Búsqueda + Revisión',
-                        position: 2 
+                        position: 2,
+                        requiresAppointment: false
                     }
                 ]);
             } finally {

@@ -215,14 +215,18 @@ const MapServiceCardInner: React.FC<MapServiceCardProps> = ({ service, isSelecte
             const result = await toggleFavoriteAsync(serviceId);
             setIsFavorite(result.isFavorite);
             // Mismo toast azul que en la homepage (no el verde de `success`).
+            // Mismo `id` en ambos toasts: un toggle rápido (añadir → quitar) reemplaza
+            // el toast anterior en vez de apilarlo (Sileo hace update-in-place por id).
+            const toastId = `favorite-${serviceId}`;
             if (result.isFavorite) {
                 toast.info('Añadido a favoritos', {
+                    id: toastId,
                     description: 'Lo tienes guardado en tu lista de favoritos.',
                     action: { label: 'Ver favoritos', onClick: () => navigate('/favorites') },
                     duration: 3000,
                 });
             } else {
-                toast.info('Quitado de favoritos', { duration: 2500 });
+                toast.info('Quitado de favoritos', { id: toastId, duration: 2500 });
             }
         } catch (error: any) {
             console.error('Error al actualizar favorito:', error);

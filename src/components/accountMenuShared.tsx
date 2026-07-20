@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { isAdmin } from '../utils/admin';
 import { getAuthToken } from '../lib/auth';
 import { RoleChecker } from '../utils/roleChecker';
-import { canPreviewWelcome, openWelcomeScreen } from '../lib/welcomeScreen';
+import { canPreviewWelcome } from '../lib/welcomeScreen';
 
 /**
  * Fuente de verdad ÚNICA del menú de cuenta (desktop [AccountMenu] y móvil
@@ -95,32 +95,41 @@ export function buildAccountMenuGroups(opts: {
 }): AccountMenuItem[][] {
   const { isExpert, userIsAdmin, go, openSettings, userEmail, openWelcome } = opts;
   const showWelcome = canPreviewWelcome(userEmail);
-  return [
-    [
-      // Ambas entradas van a la bandeja unificada, cada una con su filtro
-      // (/busquedas redirige salvo admin)
-      { id: 'searches', label: 'Mis contrataciones', icon: ClipboardList, onClick: () => go('/hires') },
-      { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => go('/messages?filter=inquiries') },
-      { id: 'favorites', label: 'Favoritos', icon: Heart, onClick: () => go('/favorites') },
-      { id: 'transactions', label: 'Transacciones', icon: CreditCard, onClick: () => go('/account/transactions') },
-    ],
-    [
-      {
-        id: 'become-expert',
-        label: isExpert ? 'Panel de experto' : 'Hazte revisor',
-        icon: isExpert ? Briefcase : UserPlus,
-        onClick: () => go(isExpert ? '/expert' : '/expert/join'),
-        highlight: !isExpert,
-      },
-      ...(userIsAdmin
-        ? [{ id: 'admin', label: 'Administración', icon: Shield, onClick: () => go('/admin') }]
-        : []),
-      { id: 'settings', label: 'Configuración', icon: Settings, onClick: openSettings },
-      ...(showWelcome && openWelcome
-        ? [{ id: 'welcome-preview', label: 'Ver bienvenida', icon: Sparkles, onClick: openWelcome }]
-        : []),
-    ],
+
+  // Entrada experto/captación. Resaltada en ambos casos: para el experto lidera
+  // su identidad (panel de trabajo), para el cliente invita a darse de alta.
+  const expertItem: AccountMenuItem = {
+    id: 'become-expert',
+    label: isExpert ? 'Panel de experto' : 'Hazte revisor',
+    icon: isExpert ? Briefcase : UserPlus,
+    onClick: () => go(isExpert ? '/expert' : '/expert/join'),
+    highlight: true,
+  };
+
+  // Ambas entradas van a la bandeja unificada, cada una con su filtro
+  // (/busquedas redirige salvo admin).
+  const activityGroup: AccountMenuItem[] = [
+    { id: 'searches', label: 'Mis contrataciones', icon: ClipboardList, onClick: () => go('/hires') },
+    { id: 'messages', label: 'Mis mensajes', icon: MessageSquare, onClick: () => go('/messages?filter=inquiries') },
+    { id: 'favorites', label: 'Favoritos', icon: Heart, onClick: () => go('/favorites') },
+    { id: 'transactions', label: 'Transacciones', icon: CreditCard, onClick: () => go('/account/transactions') },
   ];
+
+  const tailGroup: AccountMenuItem[] = [
+    ...(userIsAdmin
+      ? [{ id: 'admin', label: 'Administración', icon: Shield, onClick: () => go('/admin') }]
+      : []),
+    { id: 'settings', label: 'Configuración', icon: Settings, onClick: openSettings },
+    ...(showWelcome && openWelcome
+      ? [{ id: 'welcome-preview', label: 'Ver bienvenida', icon: Sparkles, onClick: openWelcome }]
+      : []),
+  ];
+
+  // Experto: su panel de trabajo LIDERA el menú (grupo propio arriba). Cliente:
+  // layout de siempre — actividad primero, "Hazte revisor" junto a ajustes.
+  return isExpert
+    ? [[expertItem], activityGroup, tailGroup]
+    : [activityGroup, [expertItem, ...tailGroup]];
 }
 
 /** Avatar de cuenta: foto si existe, iniciales sobre azul de marca si no. */

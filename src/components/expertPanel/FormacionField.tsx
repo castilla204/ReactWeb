@@ -18,8 +18,14 @@ interface FormacionFieldProps {
  *
  * En vez de inlinear el editor completo (que ocupaba mucho), muestra una sola
  * fila-resumen y abre el editor en un overlay:
- *   · Desktop (≥768px): popup centrado (Radix Dialog).
- *   · Mobile  (<768px): drawer inferior (Vaul).
+ *   · Desktop (≥900px): popup centrado (Radix Dialog).
+ *   · Mobile  (<900px): drawer inferior (Vaul).
+ *
+ * 900px, no el breakpoint por defecto del hook (768px/Tailwind md): es el
+ * punto de corte real del resto del editor de perfil (`expert-panel.css`,
+ * `@media (min-width: 900px)`). Con 768px este campo cambiaba a la variante
+ * de escritorio mientras el resto de la página (pestañas Perfil/Mapa) seguía
+ * en layout móvil, en la franja 768-899px.
  *
  * El editor escribe en `onChange` en vivo, así que cerrar el overlay no
  * "guarda" nada extra: el JSON ya está sincronizado con el formulario padre,
@@ -27,7 +33,7 @@ interface FormacionFieldProps {
  */
 export default function FormacionField({ value, onChange }: FormacionFieldProps) {
     const [open, setOpen] = useState(false);
-    const isMobile = useIsMobile();
+    const isMobile = useIsMobile(900);
 
     const items = useMemo(() => parseFormacion(value), [value]);
     const count = items.length;

@@ -1547,7 +1547,7 @@
 
   .pf-map-radius .pf-range {
     width: 100%;
-    height: 22px;
+    height: 44px;
   }
 
   .pf-textarea--composer {
@@ -2315,7 +2315,7 @@
   -webkit-appearance: none;
   appearance: none;
   width: 100%;
-  height: 18px;
+  height: 44px;
   margin: 0;
   background: transparent;
   cursor: pointer;
@@ -2902,33 +2902,6 @@
 
   .pf-editor--embedded .pf-btn-save:hover:not(:disabled) {
     box-shadow: none;
-  }
-
-  .pf-editor--embedded .pf-profile-pending-banner {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px 14px;
-    padding: 10px 16px 12px;
-    border-bottom: 1px solid hsl(var(--ep-warning-border));
-    background: hsl(var(--ep-warning-bg));
-  }
-
-  .pf-editor--embedded .pf-profile-pending-banner__text {
-    margin: 0;
-    flex: 1;
-    min-width: 0;
-    font-size: 0.8125rem;
-    line-height: 1.45;
-    color: hsl(215 14% 34%);
-  }
-
-  .pf-editor--embedded .pf-profile-pending-banner__cta {
-    flex-shrink: 0;
-    font-weight: 600;
-    border-color: hsl(var(--ep-warning-border)) !important;
-    background: hsl(var(--ep-surface)) !important;
   }
 
   /* Layout profesional embebido (panel experto) */

@@ -7,6 +7,7 @@ import { ChevronDown } from 'lucide-react';
 import revisionCasa from '../media/revisioncasa.jpg';
 
 import { HP_FONT } from '../constants/homepageTypography';
+import { useAccountIdentity } from './accountMenuShared';
 
 /* ── Misma tipografía y paleta que hero / HomepageWall ── */
 const FONT = HP_FONT;
@@ -253,12 +254,18 @@ const FinalCTA: React.FC = () => (
   </section>
 );
 
-const DesktopLanding: React.FC = () => (
-  <div className="hidden md:block" style={{ fontFamily: FONT, background: C.bg }}>
-    <ExpertsBand />
-    <FAQ />
-    <FinalCTA />
-  </div>
-);
+const DesktopLanding: React.FC = () => {
+  // Un experto ya registrado no debe ver la banda de captación "Hazte experto"
+  // (le ofrecería darse de alta de algo que ya es). El resto de la landing
+  // —FAQ, CTA final— sí le sirve: un experto también puede contratar a otro perito.
+  const { isExpert } = useAccountIdentity();
+  return (
+    <div className="hidden md:block" style={{ fontFamily: FONT, background: C.bg }}>
+      {!isExpert && <ExpertsBand />}
+      <FAQ />
+      <FinalCTA />
+    </div>
+  );
+};
 
 export default DesktopLanding;

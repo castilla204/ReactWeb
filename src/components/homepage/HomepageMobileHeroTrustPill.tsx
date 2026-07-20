@@ -1,11 +1,11 @@
 import React from 'react';
-import { Lock } from 'lucide-react';
 
 import {
   ESCROW_TRUST_CHIP_HEADLINE,
   ESCROW_TRUST_PILL_SUBLINE,
 } from '../../constants/escrowCopy';
 import { cn } from '../../lib/utils';
+import { EscrowCoinMark } from '../EscrowCoinMark';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '../ui/sheet';
 import { TRUST_EASE, TrustPanelBody, useTrustPanel } from '../homepageTrustShared';
 
@@ -69,7 +69,7 @@ export const HomepageMobileHeroTrustPill: React.FC = () => {
         >
           <span
             className={cn(
-              'relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-success text-success-foreground',
+              'relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-brand',
               'shadow-[0_2px_8px_rgba(15,23,42,0.08)] ring-2 ring-white/90',
               'transition-[box-shadow] duration-200',
               TRUST_EASE,
@@ -77,7 +77,7 @@ export const HomepageMobileHeroTrustPill: React.FC = () => {
             )}
             aria-hidden
           >
-            <Lock className="h-4 w-4" strokeWidth={2.25} />
+            <EscrowCoinMark coinPx={18} />
           </span>
 
           <span
@@ -86,10 +86,10 @@ export const HomepageMobileHeroTrustPill: React.FC = () => {
               '-ml-5 min-h-8',
               'transition-[border-color,box-shadow,background-color] duration-200',
               TRUST_EASE,
-              'group-hover:border-success-border/40 group-hover:bg-white/82 group-hover:shadow-[0_3px_12px_rgba(15,23,42,0.1)]',
+              'group-hover:border-brand/25 group-hover:bg-white/82 group-hover:shadow-[0_3px_12px_rgba(15,23,42,0.1)]',
             )}
           >
-            <span className="truncate text-caption font-semibold leading-tight text-success">
+            <span className="truncate text-caption font-semibold leading-tight text-brand">
               {ESCROW_TRUST_CHIP_HEADLINE}
             </span>
             <span className="truncate text-kicker font-medium leading-tight text-ink-muted">

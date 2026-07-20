@@ -53,9 +53,14 @@ export const HP_MOBILE_CATEGORY_TAB_INACTIVE_DRAWER_CLASS =
 export const HP_MOBILE_CATEGORY_TAB_ACTIVE_CHIP_CLASS =
   'rounded-full bg-brand/[0.08] px-2.5 py-1.5 font-semibold text-brand ring-1 ring-brand/15';
 
+/** Margen horizontal del muro — también lo usa el hero desktop para que el copy
+ *  quede a ras con "Revisiones en España", no con el contenedor del topbar
+ *  (SD_PAGE_INNER_MAX_CLASS tiene otro max-width/padding y desalinea). */
+export const HP_WALL_HORIZONTAL_CLASS = 'w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10';
+
 /** Contenedor del muro (Suspense + live) */
 export const HP_MOBILE_WALL_OUTER_CLASS =
-  'w-full max-w-[1280px] mx-auto px-4 md:px-6 lg:px-10 pt-0 md:pt-0 pb-0 md:pb-0';
+  `${HP_WALL_HORIZONTAL_CLASS} pt-0 md:pt-0 pb-0 md:pb-0`;
 
 /** Muro: primera sección y separación entre carruseles */
 export const HP_MOBILE_WALL_FIRST_SECTION_CLASS = 'pt-3 md:pt-4';

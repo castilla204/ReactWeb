@@ -2,8 +2,9 @@ import React, { useState, useRef, useEffect, useCallback, lazy, Suspense } from 
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { MobileProfileMenu } from './MobileProfileMenu';
-import { Search, HelpCircle, Bell, MessageSquare, CircleUserRound } from 'lucide-react';
+import { Search, HelpCircle, Bell, MessageSquare, CircleUserRound, Briefcase } from 'lucide-react';
 import { useUnreadNotificationCount } from '../hooks/useNotifications';
+import { useAccountIdentity } from './accountMenuShared';
 import {
   ensureGoogleIdentityReady,
   logGoogleOriginHintOnce,
@@ -106,6 +107,10 @@ export const MobileBottomBar: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthenticated, user } = useAuth();
+  // Rol experto: al experto le cambiamos la pestaña "Ayuda" por "Panel" (acceso
+  // directo a su trabajo). Ayuda sigue disponible desde el menú de perfil.
+  // Sustituir (no añadir) mantiene 5 tabs → no toca el footprint de 65px.
+  const { isExpert } = useAccountIdentity();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   // 🛡️ MUD-DH — contador no leídas para badge en Bell mobile.
   const { data: unreadNotifsCount = 0 } = useUnreadNotificationCount();
@@ -171,6 +176,7 @@ export const MobileBottomBar: React.FC = () => {
   const exploreActive = isActive('/');
   const messagesActive = isActive('/messages');
   const howItWorksActive = isActive('/help');
+  const panelActive = location.pathname === '/expert' || location.pathname.startsWith('/expert/');
   // profileActive solo cuando está autenticado Y está en perfil
   const profileActive = isAuthenticated && showProfileMenu;
 
@@ -178,6 +184,12 @@ export const MobileBottomBar: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     navigate('/help');
+  };
+
+  const handlePanelClick = (e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate('/expert');
   };
 
   const handleExploreClick = (e: React.MouseEvent | React.TouchEvent) => {
@@ -284,14 +296,26 @@ export const MobileBottomBar: React.FC = () => {
           onClick={handleExploreClick}
         />
 
-        {/* Ayuda — invitados y registrados */}
-        <TabButton
-          label="Ayuda"
-          icon={<HelpCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden />}
-          active={howItWorksActive}
-          onClick={handleHowItWorksClick}
-          ariaLabel="Ayuda"
-        />
+        {/* Experto → "Panel" (acceso directo a su trabajo); resto → "Ayuda".
+            Sustitución, no suma: el experto conserva 5 tabs y Ayuda queda en el
+            menú de perfil. */}
+        {isAuthenticated && isExpert ? (
+          <TabButton
+            label="Panel"
+            icon={<Briefcase size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden />}
+            active={panelActive}
+            onClick={handlePanelClick}
+            ariaLabel="Panel de experto"
+          />
+        ) : (
+          <TabButton
+            label="Ayuda"
+            icon={<HelpCircle size={ICON_SIZE} strokeWidth={ICON_STROKE} aria-hidden />}
+            active={howItWorksActive}
+            onClick={handleHowItWorksClick}
+            ariaLabel="Ayuda"
+          />
+        )}
 
         {/* 🛡️ MUD-DH — Bell de notificaciones mobile.
             Antes el cliente NO tenía forma de abrir el inbox en mobile (sólo el

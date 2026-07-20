@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { SileoFullscreenLoader } from '../components/ui/sileo-loader';
 import { SileoSkeleton } from '../components/ui/sileo-skeleton';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import { ArrowRight, ShieldCheck } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useApi } from '../hooks/useApi';
 import { API_CONFIG } from '../config/api';
@@ -18,7 +18,7 @@ import { CheckoutMobileSheet } from '../components/checkout/CheckoutMobileSheet'
 import { CheckoutMobileStickyFooter } from '../components/checkout/CheckoutMobileStickyFooter';
 import { CheckoutMobileWizardShell } from '../components/checkout/CheckoutMobileWizardShell';
 import { CheckoutMobileStepHeader, type CheckoutMobileWizardStep } from '../components/checkout/CheckoutMobileStepHeader';
-import { CheckoutCoordinationStep, type CoordinationView, COORD_CHOOSE_TITLE, getCoordDesktopStep1Lead } from '../components/checkout/CheckoutCoordinationStep';
+import { CheckoutCoordinationStep, CheckoutTrustNote, type CoordinationView, COORD_CHOOSE_TITLE, getCoordDesktopStep1Lead } from '../components/checkout/CheckoutCoordinationStep';
 import { getInspectionSubject } from '../utils/inspectionSubject';
 import { CheckoutDesktopAppointmentHeader, type DesktopCrumbStep } from '../components/checkout/CheckoutDesktopAppointmentHeader';
 import {
@@ -55,7 +55,6 @@ import {
     SD_CHECKOUT_MOBILE_BACK_TEXT_BTN_CLASS,
     SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS,
     SD_CHECKOUT_MOBILE_CHOOSE_BODY_CLASS,
-    SD_CHECKOUT_MOBILE_STATUS_NOTE_CLASS,
     SD_CHECKOUT_MOBILE_STEP_DESC_EMPHASIS_CLASS,
     SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_CLASS,
     SD_CHECKOUT_MOBILE_PAYMENT_HEADER_PRICE_META_CLASS,
@@ -1101,7 +1100,6 @@ export function CheckoutPage({}: CheckoutPageProps) {
             sellerOptionDisabled={sellerOptionDisabled}
             showSellerValidation={showSellerValidation}
             chooseLayout={coordView === 'choose'}
-            showTrustRail={coordView === 'choose'}
         />
     );
     const coordinationStepMobileNode = (
@@ -1127,7 +1125,6 @@ export function CheckoutPage({}: CheckoutPageProps) {
             sellerOptionDisabled={sellerOptionDisabled}
             showSellerValidation={showSellerValidation}
             chooseLayout={coordView === 'choose'}
-            showTrustRail={coordView === 'choose'}
         />
     );
 
@@ -1583,14 +1580,16 @@ export function CheckoutPage({}: CheckoutPageProps) {
                 )}
 
                 <CheckoutMobileStickyFooter shellRef={attachMobileFooter}>
-                    {mobileOnPaymentStep ? (
-                        <div className={cn('mb-2.5', SD_CHECKOUT_MOBILE_STATUS_NOTE_CLASS)}>
-                            <ShieldCheck className="mt-[1px] h-4 w-4 shrink-0 text-brand" strokeWidth={2} aria-hidden />
-                            <p className="text-caption leading-[1.45] text-ink-muted">
-                                <span className="font-semibold text-ink-strong">Hoy no se te cobra</span>: solo
-                                reservamos el importe en tu tarjeta. Pago seguro con Stripe.
-                            </p>
-                        </div>
+                    {inCoordinationChoice ? (
+                        <CheckoutTrustNote
+                            lead="Tu pago queda protegido"
+                            rest="da igual quién elija la fecha: lo retenemos hasta que apruebes el informe."
+                        />
+                    ) : mobileOnPaymentStep ? (
+                        <CheckoutTrustNote
+                            lead="Hoy no se te cobra:"
+                            rest="solo reservamos el importe en tu tarjeta. Pago seguro con Stripe."
+                        />
                     ) : null}
                     <div className={SD_CHECKOUT_MOBILE_FOOTER_ACTIONS_CLASS}>
                         <button

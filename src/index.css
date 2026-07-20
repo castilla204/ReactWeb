@@ -80,6 +80,24 @@
   }
 }
 
+/* Escrow «moneda → depósito»: la moneda cae y asienta una sola vez (EscrowCoinMark). */
+@keyframes escrow-coin-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-9px) scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  74% {
+    transform: translateY(-1.5px) scale(1);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
 @keyframes chat-message-in {
   from {
     opacity: 0;
@@ -1061,6 +1079,15 @@ body[data-drawer-open='chatbot'] [data-radix-dialog-overlay] {
 
     .support-chat-fab-shell--dormant {
         @apply pointer-events-none translate-y-2 scale-[0.96] opacity-0 transition-[opacity,transform] duration-200 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:translate-y-0 motion-reduce:scale-100;
+    }
+
+    /* Coordinación de esquina: cuando el aviso "descarga la app" ocupa la esquina
+       inferior-derecha (marca en <body data-app-download-banner="open">, la pone
+       AppDownloadBanner), el FAB de soporte cede el sitio. Es la red de seguridad a
+       nivel CSS de la coordinación que también hace React: garantiza CERO solape aunque
+       el JS del FAB llegue tarde, con HMR obsoleto o en una carrera de montaje. */
+    body[data-app-download-banner='open'] .support-chat-fab-shell {
+        display: none !important;
     }
 
     .support-chat-fab-dismiss {

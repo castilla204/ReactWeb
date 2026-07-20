@@ -116,7 +116,7 @@ const applyHeroGlobeAtmosphere = (map: maplibregl.Map): void => {
 };
 
 /** Estilo Carto ESPECÍFICO para ExpertsAreaMap (homepage/hero): único mapa
- *  descentralizado porque la vista globe + vuelo regional justifican un look propio.
+ *  descentralizado porque la vista regional fija justifica un look propio.
  *  Raster sin etiquetas (voyager_nolabels) + paint vivo propio. */
 function buildCartoStyle(): maplibregl.StyleSpecification {
   return {
@@ -250,36 +250,21 @@ const CITY_EXPERTS: ReadonlyArray<ExpertCity> = [
 /** Carto Voyager limpio — colores naturales tierra/agua */
 
 /**
- * Vista inicial: planeta completo (proyección globe).
- * @see https://maplibre.org/maplibre-gl-js/docs/examples/zoom-and-planet-size-relation-on-globe/
- *
- * 🔧 v7-globo: zoom 1.25 → 0.45. A 1.25 el planeta quedaba pegado a cámara
- * y se veía más bien como un casquete; a 0.45 se aprecia el "efecto globo
- * terráqueo" con esfera completa, curvatura del horizonte, espacio negro
- * alrededor. Pitch moderado para globo reconocible sin picado excesivo.
- */
-const GLOBE_INTRO = {
-  center: [0, 18] as [number, number],
-  zoom: 0.45,
-  pitch: 28,
-  bearing: -14,
-} as const;
-
-/** Vista regional tras el vuelo desde el globo (fallback España).
- *
- * Pitch moderado: curvatura del globo visible sin inclinación extrema (~52°
- * se sentía demasiado girado). Con ~32° el mapa queda más legible y profesional
- * manteniendo profundidad 3D en proyección globe.
+ * Vista regional fija (fallback España) — sin intro de planeta completo ni
+ * vuelo dramático desde el espacio. El hero se ve así desde el primer frame;
+ * si la IP resuelve un país distinto, la cámara hace un `easeTo` suave dentro
+ * de la misma escala regional (ver `LANDING_EASE_MS`). Pitch moderado para
+ * dar profundidad sin sensación de "globo girando".
  */
 const HERO_CAMERA = {
   center: [-4.0, 39.6] as [number, number],
   zoom: 4.1,
-  pitch: 32,
+  pitch: 20,
   bearing: 0,
-  maxPitch: 48,
+  maxPitch: 40,
 } as const;
 
-/** Hero móvil: mundo estático en franja lateral — sin globo ni vuelo regional */
+/** Hero móvil: mundo estático en franja lateral — sin animación de cámara */
 const MOBILE_PEEK_CAMERA = {
   center: [0, 18] as [number, number],
   zoom: 1.55,
@@ -287,31 +272,14 @@ const MOBILE_PEEK_CAMERA = {
   bearing: 0,
 } as const;
 
-// 🔧 v7-globo: hold 100→650 ms para que el usuario perciba el efecto globo
-// terráqueo (esfera completa) antes de empezar el vuelo regional. Sin esta
-// pausa el flyTo arrancaba a los 100 ms y el ojo no llegaba a registrar la
-// curvatura. 650 ms es el sweet spot — suficiente para "wow", no tanto como
-// para sentir que la página se quedó pillada.
-const GLOBE_HOLD_MS = 650;
-const LANDING_FLY_MS = 1400;
-/** Si IP no marca resolved a tiempo, forzar vuelo igual (evita quedarse en globo sin zoom). */
+/** Pequeño respiro antes de reencuadrar por IP — evita un salto de cámara en el primer frame. */
+const LANDING_DELAY_MS = 150;
+/** Duración del reencuadre suave dentro de la vista regional (nunca un vuelo planetario). */
+const LANDING_EASE_MS = 900;
+/** Si la IP no resuelve a tiempo, seguir con el fallback España igualmente. */
 const IP_RESOLVE_FALLBACK_MS = 450;
-/** Menos zoom = cámara más lejos al aterrizar (valor final de la transición) */
-const LANDING_ZOOM_PULLBACK = 2.55;
-const MIN_LANDING_ZOOM = 2.05;
 
-const toHeroLandingZoom = (zoom: number) =>
-  Math.max(MIN_LANDING_ZOOM, zoom - LANDING_ZOOM_PULLBACK);
-
-/**
- * 🔧 v7-globo-stay: ya NO conmutamos a mercator tras el vuelo. MapLibre 5.24
- * renderiza tiles raster Carto correctamente en globe a cualquier zoom (la
- * limitación del comentario original era de v4.x). Quedándonos en globe se
- * preserva la curvatura del planeta detrás del bbox regional → no se "aplana".
- * Esta función queda como NO-OP para no romper los call-sites; el `resize +
- * triggerRepaint` final sigue siendo útil para refrescar la viewport.
- */
-const applyRegionalProjection = (map: maplibregl.Map) => {
+const refreshMapAfterLanding = (map: maplibregl.Map) => {
   map.resize();
   map.triggerRepaint();
 };
@@ -395,8 +363,9 @@ interface ExpertsAreaMapProps {
   /** Ciclo de aparición/desaparición en cada punto (hero decorativo). */
   sparkleTwinkle?: boolean;
   /**
-   * `mobile-peek`: franja lateral compacta — mundo estático, sin animación globe.
-   * `default`: hero desktop con intro globe + aterrizaje regional.
+   * `mobile-peek`: franja lateral compacta — mundo estático, sin reencuadre por IP.
+   * `default`: hero desktop — vista regional fija (España/Europa) desde el primer
+   * frame, con un `easeTo` suave si la IP resuelve un país distinto.
    */
   heroVariant?: 'default' | 'mobile-peek';
 }
@@ -463,12 +432,10 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
     const map = mapRef.current;
     if (!map || sparkleMarkersRef.current.size === 0) return;
 
-    // 🌍 Antes ocultábamos TODOS los marcadores durante el intro de globo (línea
+    // 🌍 Antes ocultábamos TODOS los marcadores mientras no estuviera listo (línea
     // `if (!introComplete || !isMapMercator(map))`). Ahora `isSparkleOnScreen`
-    // entiende globe — cull por hemisferio visible + bounds del canvas — y los
-    // pickers usan grids/límites más densos en globo. Resultado: durante el
-    // aterrizaje del planeta también se ven destellos por el hemisferio frontal,
-    // sin fantasmas del lado oculto.
+    // entiende la proyección globe — cull por hemisferio visible + bounds del
+    // canvas — así que se pueden crear de entrada sin fantasmas del lado oculto.
     const visibleIds =
       sparkleDensity === 'spread'
         ? pickSpreadSparkleHubIds(map, sparkleHubs)
@@ -514,22 +481,18 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       mapRef.current.setPadding({ left, top: 0, right: 0, bottom: 0 });
     };
 
-    const flyToLanding = (targetMap: maplibregl.Map, center: [number, number], zoom: number) => {
+    // Reencuadre suave dentro de la vista regional (nunca un vuelo planetario ni globo
+    // de fondo negro): el mapa ya nace en HERO_CAMERA/MOBILE_PEEK_CAMERA, y si la IP
+    // resuelve un país distinto, la cámara hace `easeTo`/`jumpTo` hacia esa capital.
+    const easeToLanding = (targetMap: maplibregl.Map, center: [number, number], zoom: number) => {
       applyOverlayPadding();
-      const landingZoom = toHeroLandingZoom(zoom);
       const prefersReducedMotion = window.matchMedia(
         '(prefers-reduced-motion: reduce)',
       ).matches;
 
       const finishIntro = () => {
         if (cancelled || mapRef.current !== targetMap) return;
-        applyRegionalProjection(targetMap);
-        targetMap.jumpTo({
-          center,
-          zoom: landingZoom,
-          pitch: HERO_CAMERA.pitch,
-          bearing: HERO_CAMERA.bearing,
-        });
+        refreshMapAfterLanding(targetMap);
         let completed = false;
         const complete = () => {
           if (completed || cancelled || mapRef.current !== targetMap) return;
@@ -541,59 +504,37 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       };
 
       if (prefersReducedMotion) {
-        applyRegionalProjection(targetMap);
-        targetMap.jumpTo({
-          center,
-          zoom: landingZoom,
-          pitch: HERO_CAMERA.pitch,
-          bearing: HERO_CAMERA.bearing,
-        });
+        targetMap.jumpTo({ center, zoom, pitch: HERO_CAMERA.pitch, bearing: HERO_CAMERA.bearing });
         finishIntro();
         return;
       }
 
-      // Animación regional en globe: pitch final moderado — curvatura sin exceso de inclinación.
-      const globeFlyZoom = Math.max(GLOBE_INTRO.zoom, Math.min(landingZoom + 0.35, 3.2));
-      targetMap.flyTo({
+      targetMap.easeTo({
         center,
-        zoom: globeFlyZoom,
+        zoom,
         pitch: HERO_CAMERA.pitch,
         bearing: HERO_CAMERA.bearing,
-        duration: LANDING_FLY_MS,
-        speed: 1.05,
-        curve: 1.15,
+        duration: LANDING_EASE_MS,
         essential: true,
       });
 
-      const safetyTimer = window.setTimeout(finishIntro, LANDING_FLY_MS + 600);
+      const safetyTimer = window.setTimeout(finishIntro, LANDING_EASE_MS + 400);
       targetMap.once('moveend', () => {
         window.clearTimeout(safetyTimer);
         finishIntro();
       });
     };
 
-    const runLandingIntro = () => {
+    const runLanding = () => {
       if (landingStartedRef.current || cancelled || !map) return;
-      if (landingTimerRef.current) clearTimeout(landingTimerRef.current);
-
-      let frames = 0;
-      const waitGlobeRender = () => {
-        if (cancelled || mapRef.current !== map || !map) return;
-        frames += 1;
-        if (frames < 2) {
-          requestAnimationFrame(waitGlobeRender);
-          return;
-        }
-        landingStartedRef.current = true;
-        flyToLanding(map, landingTarget.center, landingTarget.zoom);
-      };
-      requestAnimationFrame(waitGlobeRender);
+      landingStartedRef.current = true;
+      easeToLanding(map, landingTarget.center, landingTarget.zoom);
     };
 
-    const scheduleLandingIntro = () => {
+    const scheduleLanding = () => {
       if (landingStartedRef.current || cancelled || !map) return;
       if (landingTimerRef.current) clearTimeout(landingTimerRef.current);
-      landingTimerRef.current = setTimeout(runLandingIntro, GLOBE_HOLD_MS);
+      landingTimerRef.current = setTimeout(runLanding, LANDING_DELAY_MS);
     };
 
     const tryScheduleLanding = () => {
@@ -609,7 +550,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         setDetectedCountryCode(ipTarget.countryCode);
       }
 
-      scheduleLandingIntro();
+      scheduleLanding();
     };
 
     tryScheduleLandingRef.current = tryScheduleLanding;
@@ -635,7 +576,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       if (cancelled || mapRef.current) return;
       if (wrapper.clientWidth < 2 || wrapper.clientHeight < 2) return;
 
-      const initialCamera = isMobilePeek ? MOBILE_PEEK_CAMERA : GLOBE_INTRO;
+      const initialCamera = isMobilePeek ? MOBILE_PEEK_CAMERA : HERO_CAMERA;
 
       map = new maplibregl.Map({
         container: el,
@@ -655,7 +596,10 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
         maxPitch: isMobilePeek ? 0 : HERO_CAMERA.maxPitch,
         pitchWithRotate: false,
         touchPitch: false,
-        dragPan: !isMobilePeek,
+        // Vista fija y decorativa: ningún gesto de exploración habilitado (ni drag,
+        // ni zoom, ni rotación). "Buscar en el mapa" es la única invitación real a
+        // interactuar; este mapa nunca debería parecer arrastrable/explorable.
+        dragPan: false,
         scrollZoom: false,
         boxZoom: false,
         dragRotate: false,
@@ -668,12 +612,6 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       });
 
       map.addControl(new maplibregl.AttributionControl({ compact: true }), 'bottom-left');
-      if (!isMobilePeek) {
-        map.addControl(
-          new maplibregl.NavigationControl({ visualizePitch: true, showCompass: false }),
-          'top-right',
-        );
-      }
 
       mapRef.current = map;
       scheduleResize();
@@ -681,7 +619,7 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       const onStyleReady = () => {
         if (cancelled || mapRef.current !== map || !map) return;
         if (isMobilePeek) {
-          applyRegionalProjection(map);
+          refreshMapAfterLanding(map);
           return;
         }
         try {
@@ -976,12 +914,11 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
       )}
 
       <style>{`
+        /* Vista fija y decorativa: sin gestos habilitados, el cursor se queda por
+           defecto — un grab/grabbing aquí prometería un arrastre que no existe. */
         .maplibregl-canvas-container.maplibregl-interactive,
         .maplibregl-canvas-container.maplibregl-interactive .maplibregl-canvas {
-          cursor: grab !important;
-        }
-        .maplibregl-canvas-container.maplibregl-interactive:active .maplibregl-canvas {
-          cursor: grabbing !important;
+          cursor: default !important;
         }
         .maplibregl-ctrl-attribution {
           font-size: 10px !important;
@@ -990,11 +927,6 @@ export const ExpertsAreaMap: React.FC<ExpertsAreaMapProps> = ({
           color: hsl(var(--ink-muted)) !important;
         }
         .maplibregl-ctrl-attribution a { color: hsl(var(--ink)) !important; }
-        .maplibregl-ctrl-group {
-          border: none !important;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.08) !important;
-        }
-        .maplibregl-ctrl-group button { color: hsl(0 0% 13%) !important; }
         .maplibregl-marker-covered {
           visibility: hidden !important;
           pointer-events: none !important;

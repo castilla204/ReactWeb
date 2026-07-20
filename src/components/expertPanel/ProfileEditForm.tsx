@@ -1,7 +1,7 @@
 ﻿import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { useBodyScrollLock } from '../../hooks/useBodyScrollLock';
 import { markFilePickerOpening } from '../../utils/filePickerGuard';
-import { Loader2, Upload, X, Plane, Search, Sparkles, MapPin, Car, ChevronDown, ChevronUp } from 'lucide-react';
+import { AlertTriangle, Loader2, Upload, Plane, Search, Sparkles, MapPin, Car, ChevronDown, ChevronUp } from 'lucide-react';
 import MapGL, {
     Marker,
     Source,
@@ -22,11 +22,6 @@ import { useExpertProfile } from '../../hooks/useExpertProfile';
 import FormacionField from './FormacionField';
 import { rewriteDescription } from '../../services/aiService';
 import { CurrentExpertAvailabilityDto } from '../../types/stripe';
-import {
-    Drawer,
-    DrawerContent,
-    DrawerTitle,
-} from '../ui/drawer';
 import { Button } from '../ui/button';
 import type { ProfileStep } from './profileSteps';
 
@@ -81,11 +76,16 @@ interface ProfileEditFormProps {
     profileSetup?: {
         steps: ProfileStep[];
         complete: boolean;
+        /** Veredicto de visibilidad del backend (mismo que usa Configuración) — puede
+         *  ser `false` con `complete: true` (Stripe en revisión, vacaciones…). */
+        visible: boolean;
         pendingRequired: number;
         onOpenSetup?: () => void;
     };
     /** Cuando lo pasa el panel admin, la edición va al endpoint admin de ese experto. */
     adminTargetUserId?: number;
+    /** Sección a la que hacer scroll/foco al montar (viene de un CTA del wizard de Configuración). */
+    focusSection?: 'photo' | 'description' | 'location' | null;
 }
 
 export function ProfileEditForm({
@@ -96,6 +96,7 @@ export function ProfileEditForm({
     onProfileUpdated,
     profileSetup,
     adminTargetUserId,
+    focusSection,
 }: ProfileEditFormProps) {
     const { updateExpertProfile, isUpdating } = useExpertProfile();
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -174,6 +175,26 @@ export function ProfileEditForm({
     const [showAddressResults, setShowAddressResults] = useState(false);
     const [addressSearchError, setAddressSearchError] = useState<string | null>(null);
     const [mobileEditorTab, setMobileEditorTab] = useState<'profile' | 'map'>('profile');
+
+    // Llegar aquí desde un CTA del wizard de Configuración ("Subir foto", "Elegir
+    // ubicación"...) debe aterrizar en ese campo concreto, no en un scroll genérico
+    // al inicio de la pestaña (los 3 CTAs hacían exactamente lo mismo antes de esto).
+    useEffect(() => {
+        if (!focusSection) return;
+        setMobileEditorTab(focusSection === 'location' ? 'map' : 'profile');
+        const targetId = focusSection === 'location'
+            ? 'pf-panel-map'
+            : focusSection === 'description'
+                ? 'description'
+                : 'pf-field-photo';
+        // rAF: esperar a que el cambio de pestaña móvil pinte (display:none → flex)
+        // antes de intentar el scroll, o el target puede seguir oculto.
+        const raf = requestAnimationFrame(() => {
+            document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+        return () => cancelAnimationFrame(raf);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [focusSection]);
 
     const cartoMapStyle = useMemo(() => buildInspeccionoMapStyle({ withLabels: true }), []);
     const [mapCanRender, setMapCanRender] = useState(false);
@@ -448,6 +469,13 @@ export function ProfileEditForm({
             const lng = parseFloat(formData.longitude);
             if (isNaN(lng) || lng < -180 || lng > 180) errors.longitude = 'La longitud debe estar entre -180 y 180';
         }
+        if (!errors.latitude && !errors.longitude) {
+            const lat = parseFloat(formData.latitude);
+            const lng = parseFloat(formData.longitude);
+            if (lat === defaultCenter.lat && lng === defaultCenter.lng) {
+                errors.latitude = 'Marca tu ubicación real en el mapa antes de guardar: búscala, tócala o arrastra el pin.';
+            }
+        }
         setFormErrors(errors);
         return Object.keys(errors).length === 0;
     };
@@ -506,7 +534,14 @@ export function ProfileEditForm({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!validateForm()) return;
+        if (!validateForm()) {
+            const lat = parseFloat(formData.latitude);
+            const lng = parseFloat(formData.longitude);
+            if (lat === defaultCenter.lat && lng === defaultCenter.lng) {
+                setMobileEditorTab('map');
+            }
+            return;
+        }
         try {
             await updateExpertProfile({
                 description: formData.description.trim(),
@@ -532,7 +567,7 @@ export function ProfileEditForm({
                 window.dispatchEvent(new CustomEvent('showNotification', {
                     detail: {
                         type: 'warning',
-                        message: `Para operar desde otro país${detected}, debes cerrar tu cuenta Stripe actual y volver a registrarte. Ve al panel de experto → "Mudarme a otro país".`,
+                        message: `Para operar desde otro país${detected}, debes cerrar tu cuenta Stripe actual y volver a registrarte. Ve al panel de experto → "Cambiar país".`,
                         duration: 12000,
                     },
                 }));
@@ -542,31 +577,6 @@ export function ProfileEditForm({
                 setFormErrors({ general: err.message || 'Error al actualizar el perfil' });
             }
         }
-    };
-
-    const resetForm = () => {
-        setFormData({
-            description: profile.description || '',
-            latitude: profile.latitude?.toString() || '',
-            longitude: profile.longitude?.toString() || '',
-        });
-        setProfilePicture(null);
-        setPreviewUrl(null);
-        setFormErrors({});
-        setWorkLocationDoor(profile.workLocationDoor ?? '');
-        setWorkLocationFloor(profile.workLocationFloor ?? '');
-        setWorkLocationDetails(profile.workLocationDetails ?? '');
-        const lat = Number(profile.latitude);
-        const lng = Number(profile.longitude);
-        const resetLocation = Number.isFinite(lat) && Number.isFinite(lng) && (lat !== 0 || lng !== 0)
-            ? { lat, lng }
-            : defaultCenter;
-        setSelectedLocation(resetLocation);
-        setWorkRadiusKm(readWorkRadiusKm(profile));
-        const restoredRadius = readWorkRadiusKm(profile);
-        if (restoredRadius > 0) lastMobileRadiusRef.current = restoredRadius;
-        mapRef.current?.flyTo({ center: [resetLocation.lng, resetLocation.lat], duration: 300 });
-        if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
     const profileImageUrl = previewUrl
@@ -661,29 +671,6 @@ export function ProfileEditForm({
                 <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />Guardando…</>
             ) : 'Guardar cambios'}
         </Button>
-    );
-
-    const saveButtonBar = (
-        <Button type="button" className={`pf-btn-save pf-btn-save--bar${isDirty ? ' pf-btn-save--dirty' : ''}`} onClick={handleSubmit} disabled={isUpdating || !isDirty}>
-            {isUpdating ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Guardando…</>
-            ) : 'Guardar cambios'}
-        </Button>
-    );
-
-    const mobileFooterActions = (
-        <div className="pf-editor-footer-actions">
-            <Button
-                type="button"
-                variant="ghost"
-                className="pf-btn-clear"
-                onClick={resetForm}
-                aria-label="Limpiar formulario"
-            >
-                Limpiar
-            </Button>
-            {saveButtonBar}
-        </div>
     );
 
     const descriptionAiBar = aiSuggestion ? (
@@ -941,112 +928,6 @@ export function ProfileEditForm({
         </div>
     );
 
-    const profileSections = (
-        <>
-                    <section id="pf-section-about" className="pf-section pf-section--about">
-                        <div className={`pf-about-composer${formErrors.description ? ' pf-about-composer--error' : ''}`}>
-                            <div className="pf-about-composer__head">
-                                <div className="pf-about-composer__photo">
-                                    <div className="pf-about-composer__label pf-photo-composer__label">
-                                        Foto de perfil
-                                        <span id="photo-hint" className="pf-about-composer__label-hint">
-                                            Tu foto actual.
-                                        </span>
-                                    </div>
-                                    <div className="pf-photo-composer__body" aria-describedby="photo-hint">
-                                        <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
-                                            {profileImageUrl ? (
-                                                <img src={profileImageUrl} alt="" />
-                                            ) : (
-                                                <span className="pf-avatar-empty"><Upload className="h-8 w-8" /></span>
-                                            )}
-                                            <span className="pf-avatar-overlay" aria-hidden>
-                                                <Upload className="h-4 w-4" />
-                                            </span>
-                                        </button>
-                                        <div className="pf-photo-composer__side">
-                                            <div className="pf-about-composer__actions">
-                                                <button type="button" className="pf-avatar-link" onClick={openFilePicker}>
-                                                    {profileImageUrl ? 'Cambiar foto' : 'Subir foto'}
-                                                </button>
-                                                {(previewUrl || profilePicture) && (
-                                                    <button type="button" className="pf-avatar-link pf-avatar-link--danger" onClick={removeImage}>
-                                                        Quitar
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                        <input
-                                            ref={fileInputRef}
-                                            type="file"
-                                            accept="image/jpeg,image/png,image/jpg"
-                                            onChange={handleImageSelect}
-                                            onClick={(e) => { e.stopPropagation(); markFilePickerOpening(); }}
-                                            className="hidden"
-                                        />
-                                        {formErrors.profilePicture && <p className="pf-error pf-error--inline">{formErrors.profilePicture}</p>}
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="pf-about-composer__copy">
-                                <label htmlFor="description" className="pf-about-composer__label">
-                                    Descripción profesional
-                                    <span id="description-hint" className="pf-about-composer__label-hint">
-                                        Quién eres y en qué te especializas (30–60 car.)
-                                    </span>
-                                </label>
-                                <div className={`pf-textarea-wrap${aiSuggestion ? ' pf-textarea-wrap--ai' : ''}`}>
-                                    <textarea
-                                        id="description"
-                                        value={descriptionValue}
-                                        onChange={(e) => handleDescriptionChange(e.target.value)}
-                                        rows={2}
-                                        minLength={30}
-                                        maxLength={60}
-                                        placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
-                                        className={`pf-textarea pf-textarea--composer${formErrors.description ? ' pf-textarea--error' : ''}${aiSuggestion ? ' pf-textarea--ai-preview' : ''}`}
-                                        required
-                                        aria-describedby="description-hint"
-                                    />
-                                    {descriptionAiBar}
-                                </div>
-                                <span className={`pf-about-composer__meta pf-about-composer__meta--${descMetaTone}`}>{descLength}/60</span>
-                                {aiRewriteUi}
-                            </div>
-                        </div>
-                        {formErrors.description && (
-                            <div className="pf-about-errors">
-                                <p className="pf-error">{formErrors.description}</p>
-                            </div>
-                        )}
-                    </section>
-
-                    <section id="pf-section-zone" className="pf-section pf-section--zone">
-                        <div className="pf-section-fields">
-                            {!MAPBOX_TOKEN ? (
-                                <div className="pf-alert">Falta configurar VITE_MAPBOX_PUBLIC_TOKEN.</div>
-                            ) : (
-                                <div className="pf-map-panel">
-                                    <div className="pf-zone-composer">
-                                        <div className="pf-about-composer__label pf-zone-composer__label">
-                                            Zona de trabajo
-                                            <span id="zone-hint" className="pf-about-composer__label-hint">
-                                                Busca tu dirección y ajusta el radio en el mapa.
-                                            </span>
-                                        </div>
-                                        {mapStageUi('')}
-                                    </div>
-                                </div>
-                            )}
-                            {addressSearchError && <p className="pf-error pf-zone-composer__error">{addressSearchError}</p>}
-                            {(formErrors.latitude || formErrors.longitude) && (
-                                <p className="pf-error pf-zone-composer__error">{formErrors.latitude || formErrors.longitude}</p>
-                            )}
-                        </div>
-                    </section>
-        </>
-    );
-
     const formErrorAlert = formErrors.general ? (
         <div className="pf-alert">
             <div>{formErrors.general}</div>
@@ -1061,14 +942,13 @@ export function ProfileEditForm({
                     }}
                 >
                     <Plane className="w-4 h-4 mr-2" />
-                    Iniciar asistente de mudanza
+                    Cambiar país
                 </Button>
             )}
         </div>
     ) : null;
 
-    if (embedded) {
-        return (
+    return (
             <div className="av-page pf-page pf-editor--embedded">
                 <header className="av-page-intro">
                     <p className="av-page-intro__lead">
@@ -1079,11 +959,21 @@ export function ProfileEditForm({
                         <li>Sube una foto clara y escribe una descripción breve</li>
                         <li>Busca tu dirección en el mapa y pulsa <strong>Guardar cambios</strong></li>
                     </ol>
-                    {profileSetup && !profileSetup.complete ? (
-                        <div className="pf-profile-pending-banner">
-                            <p className="pf-profile-pending-banner__text">
-                                Tus servicios no aparecen en búsquedas hasta completar los requisitos obligatorios.
-                            </p>
+                    {profileSetup && !profileSetup.visible ? (
+                        <div className="pf-profile-pending-banner" role="status">
+                            <AlertTriangle className="pf-profile-pending-banner__icon" aria-hidden />
+                            <div className="pf-profile-pending-banner__body">
+                                <p className="pf-profile-pending-banner__title">
+                                    {profileSetup.pendingRequired
+                                        ? `Falta${profileSetup.pendingRequired === 1 ? '' : 'n'} ${profileSetup.pendingRequired} requisito${profileSetup.pendingRequired === 1 ? '' : 's'} obligatorio${profileSetup.pendingRequired === 1 ? '' : 's'}`
+                                        : 'Perfil oculto en búsquedas'}
+                                </p>
+                                <p className="pf-profile-pending-banner__text">
+                                    {profileSetup.pendingRequired
+                                        ? 'Tus servicios no aparecen en búsquedas hasta completarlos en Configuración.'
+                                        : 'Requisitos completos, pero algo externo te mantiene oculto. Revisa Configuración para ver el motivo.'}
+                                </p>
+                            </div>
                             {profileSetup.onOpenSetup ? (
                                 <Button
                                     type="button"
@@ -1104,7 +994,7 @@ export function ProfileEditForm({
                         <div className="pf-profile-editor__action-bar">
                             <div className="pf-profile-editor__status">
                                 {profileSetup ? (
-                                    profileSetup.complete ? (
+                                    profileSetup.visible ? (
                                         <span className="pf-status-led pf-status-led--on" role="status">
                                             <span className="pf-status-led__dot" aria-hidden />
                                             <span className="pf-status-led__label">Perfil activo</span>
@@ -1112,14 +1002,18 @@ export function ProfileEditForm({
                                     ) : (
                                         <span className="pf-status-led pf-status-led--off" role="status">
                                             <span className="pf-status-led__dot" aria-hidden />
-                                            <span className="pf-status-led__label">Incompleto</span>
+                                            <span className="pf-status-led__label">
+                                                {profileSetup.complete ? 'Oculto' : 'Incompleto'}
+                                            </span>
                                         </span>
                                     )
                                 ) : null}
                                 <span className="pf-status-led__hint">
-                                    {profileSetup?.complete
+                                    {profileSetup?.visible
                                         ? 'Visible en búsquedas'
-                                        : `Faltan ${profileSetup?.pendingRequired ?? 0} requisito${profileSetup?.pendingRequired === 1 ? '' : 's'}`}
+                                        : profileSetup?.pendingRequired
+                                            ? `Faltan ${profileSetup.pendingRequired} requisito${profileSetup.pendingRequired === 1 ? '' : 's'}`
+                                            : 'Revisa Configuración'}
                                 </span>
                             </div>
                             <div className="pf-profile-editor__action-bar-end">
@@ -1162,7 +1056,7 @@ export function ProfileEditForm({
                                 className="av-calendar__main pf-profile-editor__main"
                             >
                                 <div className="pf-profile-editor__body">
-                                    <div className="pf-profile-editor__section pf-profile-editor__section--photo">
+                                    <div id="pf-field-photo" className="pf-profile-editor__section pf-profile-editor__section--photo">
                                         <div className="pf-profile-editor__photo-block">
                                             <button type="button" className="pf-avatar pf-avatar--composer" onClick={openFilePicker} aria-label="Cambiar foto de perfil">
                                                 {profileImageUrl ? (
@@ -1222,7 +1116,7 @@ export function ProfileEditForm({
                                                 rows={2}
                                                 minLength={30}
                                                 maxLength={60}
-                                                placeholder="Ej.: Especialista en revisión de vehículos con amplia experiencia en mecánica."
+                                                placeholder="Ej.: Especialista en revisión de coches y motos de ocasión."
                                                 className={`pf-textarea pf-textarea--field${formErrors.description ? ' pf-textarea--error' : ''}${aiSuggestion ? ' pf-textarea--ai-preview' : ''}`}
                                                 required
                                                 aria-describedby="description-hint"
@@ -1270,62 +1164,4 @@ export function ProfileEditForm({
                 </form>
             </div>
         );
-    }
-
-    const editorCard = (
-        <div className="pf-editor-stack">
-            <form className="pf-form pf-form--stacked" onSubmit={handleSubmit}>
-                <div className="pf-settings-card pf-settings-card--content">
-                    <div className="pf-form-body">
-                        <div className="pf-form-grid">
-                            {profileSections}
-                        </div>
-                    </div>
-                </div>
-                {formErrorAlert}
-            </form>
-        </div>
-    );
-
-    return (
-        <Drawer
-            open={showEditForm}
-            onOpenChange={(open) => { if (open && !showEditForm) setShowEditForm?.(true); }}
-            dismissible={false}
-            repositionInputs={false}
-            shouldScaleBackground={false}
-        >
-            <DrawerContent
-                className="h-[100dvh] max-h-[100dvh] rounded-none border-0 flex flex-col"
-                onOpenAutoFocus={(e) => e.preventDefault()}
-                onCloseAutoFocus={(e) => e.preventDefault()}
-                onPointerDownOutside={(e) => {
-                    if ((e.target as HTMLElement | null)?.closest('[data-relocation-wizard]')) return;
-                    e.preventDefault();
-                }}
-                onInteractOutside={(e) => {
-                    if ((e.target as HTMLElement | null)?.closest('[data-relocation-wizard]')) return;
-                    e.preventDefault();
-                }}
-                onFocusOutside={(e) => {
-                    if ((e.target as HTMLElement | null)?.closest('[data-relocation-wizard]')) return;
-                    e.preventDefault();
-                }}
-                onEscapeKeyDown={(e) => e.preventDefault()}
-            >
-                <header className="pf-drawer-header">
-                    <DrawerTitle asChild><h2>Editar perfil</h2></DrawerTitle>
-                    <Button variant="ghost" size="icon" className="h-9 w-9" onClick={closeEditor} aria-label="Cerrar">
-                        <X className="h-4 w-4" />
-                    </Button>
-                </header>
-                <div className="pf-drawer-body">
-                    <div className="pf-editor-frame">{editorCard}</div>
-                </div>
-                <footer className="pf-drawer-footer">
-                    {mobileFooterActions}
-                </footer>
-            </DrawerContent>
-        </Drawer>
-    );
 }

@@ -14,6 +14,7 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useExpertVisibility } from '../../hooks/useExpertVisibility';
+import { SileoSkeleton } from '../ui/sileo-skeleton';
 
 interface ProfileLike {
     profilePictureUrl?: string | null;
@@ -28,7 +29,7 @@ interface ProfileLike {
 
 interface ProfileSetupWizardProps {
     profile: ProfileLike;
-    onEditProfile: () => void;
+    onEditProfile: (section?: 'photo' | 'description' | 'location') => void;
     onEditAvailability?: () => void;
     onOpenStripe: () => void;
     visibilityNote?: string | null;
@@ -189,33 +190,63 @@ function MobileVerificationPanel({ onVerified }: { onVerified: () => void }) {
             </p>
 
             {step === 'phone' ? (
-                <div className="expert-setup-inline-form">
-                    <Input
-                        type="tel"
-                        value={phone}
-                        onChange={(e) => setPhone(e.target.value)}
-                        placeholder="+34 600 000 000"
-                    />
-                    <Button onClick={sendCode} disabled={busy || phone.trim().length < 9} className="expert-setup-btn expert-btn-brand shrink-0" size="sm">
-                        {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Enviar código'}
-                    </Button>
+                <div>
+                    <label htmlFor="expert-setup-phone" className="expert-setup-field-label">
+                        Número de móvil
+                    </label>
+                    <div className="expert-setup-inline-form">
+                        <Input
+                            id="expert-setup-phone"
+                            type="tel"
+                            value={phone}
+                            onChange={(e) => setPhone(e.target.value)}
+                            placeholder="+34 600 000 000"
+                        />
+                        <Button onClick={sendCode} disabled={busy || phone.trim().length < 9} className="expert-setup-btn expert-btn-brand shrink-0" size="sm">
+                            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Enviar código'}
+                        </Button>
+                    </div>
                 </div>
             ) : (
                 <div className="space-y-2">
                     <p className="expert-setup-card-body-text">Código enviado a {phone}</p>
-                    <div className="expert-setup-inline-form">
-                        <Input
-                            type="text"
-                            inputMode="numeric"
-                            value={code}
-                            onChange={(e) => setCode(e.target.value)}
-                            placeholder="000000"
-                            maxLength={8}
-                            className="expert-setup-code-input"
-                        />
-                        <Button onClick={verifyCode} disabled={busy || code.trim().length < 4} className="expert-setup-btn expert-btn-brand shrink-0" size="sm">
-                            {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Confirmar'}
-                        </Button>
+                    <div>
+                        <label htmlFor="expert-setup-code" className="expert-setup-field-label">
+                            Código de verificación
+                        </label>
+                        <div className="expert-setup-inline-form">
+                            <Input
+                                id="expert-setup-code"
+                                type="text"
+                                inputMode="numeric"
+                                value={code}
+                                onChange={(e) => setCode(e.target.value)}
+                                placeholder="000000"
+                                maxLength={8}
+                                className="expert-setup-code-input"
+                            />
+                            <Button onClick={verifyCode} disabled={busy || code.trim().length < 4} className="expert-setup-btn expert-btn-brand shrink-0" size="sm">
+                                {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Confirmar'}
+                            </Button>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3 text-sm">
+                        <button
+                            type="button"
+                            onClick={() => { setStep('phone'); setCode(''); setError(null); }}
+                            disabled={busy}
+                            className="font-medium text-ink-muted hover:text-ink-strong disabled:opacity-50"
+                        >
+                            Atrás
+                        </button>
+                        <button
+                            type="button"
+                            onClick={sendCode}
+                            disabled={busy}
+                            className="font-medium text-brand hover:text-brand-hover disabled:opacity-50"
+                        >
+                            Reenviar código
+                        </button>
                     </div>
                 </div>
             )}
@@ -305,6 +336,44 @@ function StepCard({
     );
 }
 
+/**
+ * Fiel al frame real (`.expert-setup` header + 6 filas planas). Evita que el
+ * paso "Verificación móvil" cambie de pendiente→hecho tras el primer pintado
+ * y arrastre la tarjeta activa a otro sitio sin que el usuario lo pidiera.
+ */
+function ProfileSetupWizardSkeleton() {
+    return (
+        <div className="expert-setup" aria-busy="true" aria-label="Cargando configuración del perfil">
+            <header className="expert-setup-header">
+                <div className="expert-setup-header-progress">
+                    <div className="expert-setup-header-progress-meta">
+                        <SileoSkeleton className="h-3 w-14" rounded="sm" />
+                        <SileoSkeleton className="h-[19px] w-24" rounded="full" />
+                    </div>
+                    <div className="expert-setup-progress-track">
+                        <SileoSkeleton className="h-full w-4/5" rounded="sm" />
+                    </div>
+                </div>
+                <SileoSkeleton className="mt-1.5 h-4 w-3/5" rounded="sm" />
+            </header>
+            <div className="expert-setup-list">
+                {Array.from({ length: 6 }).map((_, i) => (
+                    <div key={i} className="expert-setup-card">
+                        <div className="expert-setup-card-head">
+                            <SileoSkeleton className="h-[22px] w-[22px] shrink-0" rounded="full" shimmerDelayMs={i * 60} />
+                            <div className="expert-setup-card-head-text">
+                                <SileoSkeleton className="h-3.5 w-2/5" rounded="sm" shimmerDelayMs={i * 60} />
+                                <SileoSkeleton className="mt-1.5 h-2.5 w-1/3" rounded="sm" shimmerDelayMs={i * 60} />
+                            </div>
+                            <SileoSkeleton className="h-4 w-14 shrink-0" rounded="full" shimmerDelayMs={i * 60} />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export function ProfileSetupWizard({
     profile,
     onEditProfile,
@@ -364,8 +433,16 @@ export function ProfileSetupWizard({
     const handlePrimary = (stepId: StepId) => {
         if (stepId === 'fiscal') onOpenStripe();
         else if (stepId === 'availability') (onEditAvailability ?? onEditProfile)();
+        else if (stepId === 'photo' || stepId === 'description' || stepId === 'location') onEditProfile(stepId);
         else onEditProfile();
     };
+
+    // El estado "hecho" del móvil depende de esta query; pintar antes de que
+    // resuelva marcaría el paso como pendiente y luego lo saltaría a "hecho"
+    // debajo del usuario, arrastrando la tarjeta activa a otro sitio.
+    if (phoneStatus.isLoading) {
+        return <ProfileSetupWizardSkeleton />;
+    }
 
     return (
         <div className="expert-setup">

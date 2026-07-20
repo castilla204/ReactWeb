@@ -13,14 +13,43 @@
 
   /* CRÍTICO — NO subir de 350px. El pill "físico" de Sileo se dibuja con un
      <svg> cuyo ancho está HARDCODEADO en el runtime (`const WIDTH = 350`,
-     viewBox `0 0 350 H`): no escala con el CSS. Si la caja del toast (que sí
-     usa `width: var(--sileo-width)`) supera 350, la descripción ocupa el 100%
-     de esa caja más ancha y el texto SE SALE del pill por la derecha (con
-     380px se salía ~30px). Mantener el techo en 350 = ancho real del dibujo.
-     El `min(...)` clampa además al ancho disponible: el toast no tiene
-     max-width propio y, en el viewport flex en columna, no encoge solo, así
-     que en pantallas estrechas (iPhone SE, 375px) un valor fijo desbordaría. */
+     viewBox `0 0 350 H`). Con el fix de abajo (`[data-sileo-svg]` a 100% +
+     `preserveAspectRatio="none"` parcheado en sileo.tsx) el dibujo SÍ sigue
+     ya esta variable en cualquier pantalla, pero 350 sigue siendo su ancho
+     "natural" (el roundness/proporción del pill está pensado para ese ancho):
+     no tiene sentido pedir más. El `min(...)` clampa al ancho disponible para
+     que en pantallas estrechas (iPhone SE, 375px) el toast, anclado arriba a
+     la derecha, no desborde. */
   --sileo-width: min(350px, calc(100vw - 1.5rem));
+}
+
+/* El <svg> del pill trae ancho/alto fijos que no encogen con el CSS del
+   contenedor. `preserveAspectRatio="none"` se parchea por JS en sileo.tsx
+   (no es un atributo estilable por CSS); aquí solo forzamos la caja al 100%
+   de `--sileo-width` para que ese estiramiento se aplique. Sin el parche JS
+   este `100%` solo escalaría uniformemente (dejando hueco en blanco vertical
+   por el `preserveAspectRatio` por defecto del <svg>) — los dos cambios van
+   juntos. */
+[data-sileo-svg] {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* El toast va anclado arriba a la derecha en TODA la app, la misma esquina
+   donde vive la cabecera fija (buscador, notificaciones, login/avatar) en las
+   páginas que la tienen — sus z-index empatan a 50 y el toast, montado
+   después en el DOM, gana el empate y pinta encima, bloqueando el click de
+   esos botones si se solapan (el viewport no tiene pointer-events salvo en
+   el propio toast, pero el toast SÍ los intercepta donde se dibuja).
+   `--sileo-top-clearance` la mide sileo.tsx en tiempo real (altura real de
+   la cabecera sticky/fixed de la página actual, si la hay) — NO usar un
+   valor fijo: la home en móvil no tiene cabecera hasta hacer scroll, y un
+   hueco fijo generoso (probado con 4.5rem) empuja el toast sobre la tarjeta
+   de héroe en vez de despejar nada. El fallback (0.75rem) es solo por si el
+   JS aún no corrió (primer paint). El notch/status bar (Capacitor) se suma
+   aparte. */
+[data-sileo-viewport][data-position^='top'] {
+  padding-top: calc(var(--sileo-top-clearance, 0.75rem) + env(safe-area-inset-top, 0px));
 }
 
 /* Título en frase normal (no "Capitaliza Cada Palabra") + tipografía de marca. */

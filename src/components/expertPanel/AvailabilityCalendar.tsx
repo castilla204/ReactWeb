@@ -4,6 +4,8 @@ import { es } from 'date-fns/locale';
 import { API_CONFIG } from '../../config/api';
 import { getAuthToken } from '../../lib/auth';
 import { Calendar } from '../ui/calendar';
+import { Button } from '../ui/button';
+import { SileoSkeleton } from '../ui/sileo-skeleton';
 import { cn } from '../../lib/utils';
 import RangeList, { Range } from './RangeList';
 import type { AvailabilityHandle } from './AvailabilityRulesEditor';
@@ -97,6 +99,10 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
     // Confirmación inline al aplicar a muchos días (evita cierres masivos accidentales).
     const [confirmBulk, setConfirmBulk] = useState(false);
     const prevSelSize = useRef(0);
+    const asideRef = useRef<HTMLElement>(null);
+    // Solo protege la PRIMERA carga: si un refetch posterior falla, los datos ya
+    // mostrados siguen siendo válidos y no hay que bloquear el formulario por ello.
+    const hasLoadedOnce = useRef(false);
 
     const enabledWeekdays = useMemo(() => new Set(rules.map((r) => r.dayOfWeek)), [rules]);
     const pendingCount = Object.keys(pending).length;
@@ -131,8 +137,9 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                 fetch(`${API_CONFIG.baseUrl}${avBase}/rules`, { headers: authHeaders() }),
                 fetch(`${API_CONFIG.baseUrl}${avBase}/exceptions?from=${from}&to=${to}`, { headers: authHeaders() }),
             ]);
-            const rData: any[] = rRes.ok ? await rRes.json() : [];
-            const eData: any[] = eRes.ok ? await eRes.json() : [];
+            if (!rRes.ok || !eRes.ok) throw new Error('http');
+            const rData: any[] = await rRes.json();
+            const eData: any[] = await eRes.json();
             setRules((rData || []).map((r) => ({
                 dayOfWeek: r.dayOfWeek ?? r.DayOfWeek,
                 startLocal: r.startLocal ?? r.StartLocal,
@@ -148,6 +155,7 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                 };
             });
             setExceptions(map);
+            hasLoadedOnce.current = true;
         } catch {
             setError('No se pudo cargar el calendario.');
         } finally {
@@ -205,6 +213,14 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                 setDraft({ isWorking: true, ranges: [{ start: '09:00', end: '18:00' }] });
             }
             setError(null); setSuccess(null);
+            // Móvil (<900px, calendario y panel apilados): sin esto, tocar un día no
+            // muestra ningún cambio visible hasta hacer scroll manualmente hacia abajo.
+            if (typeof window !== 'undefined' && window.matchMedia('(max-width: 899px)').matches) {
+                const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+                requestAnimationFrame(() => {
+                    asideRef.current?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'nearest' });
+                });
+            }
         }
         prevSelSize.current = selCount;
     }, [selCount, selectedDays, effState]);
@@ -380,12 +396,6 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                     )}
                 >
                     <span className="relative z-10">{d.getDate()}</span>
-                    {works && kind === 'split' && !isSelected && (
-                        <span className="absolute bottom-1 left-1/2 z-10 flex -translate-x-1/2 gap-0.5" aria-hidden>
-                            <span className="h-0.5 w-1.5 rounded-full bg-[hsl(260_46%_45%)]" />
-                            <span className="h-0.5 w-1.5 rounded-full bg-[hsl(260_46%_45%)]" />
-                        </span>
-                    )}
                     {(isPending || hasPersisted) && (
                         <span
                             className={cn('absolute right-1 top-1 z-10 h-1.5 w-1.5 rounded-full ring-2 ring-white',
@@ -417,14 +427,42 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
 
     return (
         <section className="av-calendar">
-            {error && <p className="av-calendar__alert av-calendar__alert--error">{error}</p>}
+            {error && hasLoadedOnce.current && <p className="ep-alert ep-alert--error">{error}</p>}
             {success && !pendingCount && (
-                <p className="av-calendar__alert bg-success-tint text-success">{success}</p>
+                <p className="ep-alert bg-success-tint text-success">{success}</p>
             )}
 
             {loading ? (
-                <div className="av-calendar__loading">
-                    <Loader2 className="h-4 w-4 animate-spin text-brand" /> Cargando calendario…
+                <div className="av-calendar__layout" aria-busy="true" aria-label="Cargando calendario">
+                    <div className="av-calendar__main">
+                        <div className="av-calendar__toolbar">
+                            <SileoSkeleton className="h-5 w-36" rounded="md" />
+                            <div className="flex items-center gap-2">
+                                <SileoSkeleton className="h-8 w-16" rounded="lg" />
+                                <SileoSkeleton className="h-8 w-8" rounded="lg" />
+                                <SileoSkeleton className="h-8 w-8" rounded="lg" />
+                            </div>
+                        </div>
+                        <div className="av-calendar__skeleton-grid">
+                            {Array.from({ length: 35 }).map((_, i) => (
+                                <SileoSkeleton key={i} className="av-calendar__skeleton-cell" rounded="md" shimmerDelayMs={(i % 7) * 60} />
+                            ))}
+                        </div>
+                    </div>
+                    <aside className="av-calendar__aside">
+                        <SileoSkeleton className="h-4 w-32" rounded="sm" />
+                        <SileoSkeleton className="mt-3 h-20 w-full" rounded="lg" />
+                    </aside>
+                </div>
+            ) : error && !hasLoadedOnce.current ? (
+                <div className="ep-empty-state">
+                    <p className="ep-empty-state-title">No se pudo cargar tu calendario</p>
+                    <p className="ep-empty-state-text">
+                        Puede ser un problema de conexión. Tu horario real no ha cambiado — reinténtalo antes de guardar nada.
+                    </p>
+                    <Button type="button" onClick={() => load(month)} className="expert-btn-brand mt-4">
+                        Reintentar
+                    </Button>
                 </div>
             ) : (
                 <div className="av-calendar__layout">
@@ -474,7 +512,7 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                                 <button key={w.dow} type="button" onClick={() => selectWeekdayColumn(w.dow)}
                                     aria-label={`Todos los "${w.short}" ${scope === 'all' ? `hasta ${horizonLabel}` : 'de este mes'}`}
                                     title={`Todos los "${w.short}" ${scope === 'all' ? `hasta ${horizonLabel}` : 'de este mes'}`}
-                                    className="h-7 w-7 rounded-full border border-line text-xs font-semibold text-ink-muted hover:border-brand/50 hover:text-brand">
+                                    className="h-9 w-9 rounded-full border border-line text-xs font-semibold text-ink-muted hover:border-brand/50 hover:text-brand">
                                     {w.short}
                                 </button>
                             ))}
@@ -531,7 +569,7 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                         </div>
                     </div>
 
-                    <aside className="av-calendar__aside">
+                    <aside ref={asideRef} className="av-calendar__aside">
                         <div className="av-calendar__aside-card">
                         {selCount > 0 ? (
                             <div className="av-day-editor">
@@ -604,10 +642,9 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                                                 className="rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink-muted hover:bg-surface-tinted">
                                                 Cancelar
                                             </button>
-                                            <button type="button" onClick={applyToSelection}
-                                                className="rounded-xl bg-brand px-4 py-2 text-sm font-semibold text-white hover:opacity-90">
+                                            <Button type="button" onClick={applyToSelection} size="sm" className="expert-btn-brand">
                                                 Sí, aplicar a {selCount} días
-                                            </button>
+                                            </Button>
                                         </div>
                                     </div>
                                 ) : (
@@ -625,14 +662,14 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                                 )}
                             </div>
                         ) : (
-                            <div className="av-calendar__empty">
+                            <div className="ep-empty-state">
                                 <div className="av-calendar__empty-grid" aria-hidden>
                                     {Array.from({ length: 9 }).map((_, i) => (
                                         <span key={i} className={i === 4 ? 'av-calendar__empty-cell av-calendar__empty-cell--active' : 'av-calendar__empty-cell'} />
                                     ))}
                                 </div>
-                                <p className="av-calendar__empty-title">Selecciona uno o varios días</p>
-                                <p className="av-calendar__empty-text">
+                                <p className="ep-empty-state-title">Selecciona uno o varios días</p>
+                                <p className="ep-empty-state-text">
                                     Pulsa los días que quieras (o usa los atajos de arriba para una columna entera o todo el mes),
                                     aplícales el horario de una vez y guárdalos todos juntos.
                                 </p>
@@ -657,11 +694,10 @@ const AvailabilityCalendar = forwardRef<AvailabilityHandle, AvailabilityCalendar
                             className="inline-flex items-center gap-1 rounded-xl border border-line bg-white px-3 py-2 text-sm font-medium text-ink-muted hover:bg-surface-tinted disabled:opacity-50">
                             <Undo2 className="h-4 w-4" /> Descartar
                         </button>
-                        <button type="button" onClick={saveAll} disabled={saving}
-                            className="inline-flex items-center gap-2 rounded-xl bg-brand px-5 py-2 text-sm font-semibold text-white shadow-[0_3px_12px_hsl(var(--brand)/0.45)] transition-all hover:opacity-90 disabled:opacity-50 disabled:shadow-none disabled:saturate-[0.6]">
+                        <Button type="button" onClick={saveAll} disabled={saving} className="expert-btn-brand inline-flex items-center gap-2">
                             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                             {saving ? 'Guardando…' : 'Guardar cambios'}
-                        </button>
+                        </Button>
                     </div>
                 </div>
             )}
