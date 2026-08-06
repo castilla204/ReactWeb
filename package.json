@@ -71,7 +71,7 @@
     "pdfjs-dist": "^4.7.76",
     "react": "^19.0.0",
     "react-datepicker": "^9.0.0",
-    "react-day-picker": "^9.11.2",
+    "react-day-picker": "^10.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.66.1",
     "react-i18next": "^17.0.8",
