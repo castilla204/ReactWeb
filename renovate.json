@@ -69,5 +69,6 @@
   "automergeType": "pr",
   "automergeStrategy": "squash",
   "requiredStatusChecks": [],
-  "stabilityDays": 0
+  "stabilityDays": 0,
+  "enabled": false
 }
